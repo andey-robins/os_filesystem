@@ -12,7 +12,7 @@ What is working and not working?
 
 What are you attributes?  
 Last Accessed Date  
-Emojis?
+Emojis
 
 
 

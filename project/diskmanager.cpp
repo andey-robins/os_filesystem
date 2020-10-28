@@ -1,5 +1,6 @@
 #include "disk.h"
 #include "diskmanager.h"
+#include <fstream>
 #include <iostream>
 using namespace std;
 
@@ -11,8 +12,23 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
   char buffer[64];
 
   /* If needed, initialize the disk to keep partition information */
-  diskP = new DiskPartition[partCount];
+  /*
+    Stefan Emmons: Based on the return value of the initDisk function, we need to make
+    a decision based on wether a disk has already been created (return val 0),
+    or one has been created, and we need to create a new partition(s) for it (return val 1).
+  */
+  if (r == 1)
+  {
+    diskP = dp;
+    myDisk->writeDiskBlock(0, buffer);
+  }
   /* else  read back the partition information from the DISK1 */
+
+  else if (r == 0)
+  {
+    diskP = new DiskPartition[partCount];
+    myDisk->readDiskBlock(0, buffer);
+  }
 
 }
 
@@ -25,7 +41,36 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
  */
 int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
 {
-  /* write the code for reading a disk block from a partition */
+  if ((blknum < 0) || (blknum >= myDisk->blkCount))
+  {
+    return -2;
+  }
+
+  for(int i = 0; i < partCount; i++)
+  {
+    if (diskP[i].partitionName == partitionname)
+    {
+      break;
+    }
+
+    else if (diskP[i].partitionName != partitionname)
+    {
+      continue;
+    }
+
+    return -3;    
+  }
+
+  ifstream file((myDisk->diskFilename), ios::in);
+  if (!file)
+  {
+    return -1;
+  }
+
+  file.seekg(blknum * myDisk->blkSize);
+  file.read(blkdata, myDisk->blkSize);
+  file.close();
+  return(0);
 }
 
 
@@ -38,7 +83,7 @@ int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
  */
 int DiskManager::writeDiskBlock(char partitionname, int blknum, char *blkdata)
 {
-  /* write the code for writing a disk block to a partition */
+  //Same logic as read disk block 
 }
 
 /*

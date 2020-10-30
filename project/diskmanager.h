@@ -12,6 +12,9 @@ class DiskManager {
   DiskPartition *diskP;
 
   /* declare other private members here */
+  private:
+    void fillPartition(char * buffer, int num, int pos);
+    int retrievePartition(char * buffer, int pos);
 
   public:
     DiskManager(Disk *d, int partCount, DiskPartition *dp);

@@ -1,5 +1,6 @@
 class PartitionManager {
   DiskManager *myDM;
+  //BitVector *myBitVector;
 
 
   public:

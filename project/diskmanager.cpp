@@ -7,8 +7,6 @@
 #include <cmath>
 using namespace std;
 
-int bufferIndexer = 0;
-int blockCount = 1;
 
 DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
 {
@@ -19,12 +17,13 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
 
   /* If needed, initialize the disk to keep partition information */
   /*
-    Stefan Emmons: Based on the return value of the initDisk function, we need to make
-    a decision based on wether a disk has already been created (return val 0),
-    or one has been created, and we need to create a new partition(s) for it (return val 1).
-    
-    This is almost certainly not complete, I think we need to establish some
-    partition logic here, as this is where partitions should be created.
+    When the need to create and partition a new disk arises, we start here and create
+    the partition table.
+    The partition table scheme used in this program is unique, and has a specific ordering.
+    We begin with the name, then the partition size, the start block (exlcuding the first,
+    as it is the root directory), and the end block. After the name and overal size is written,
+    the start and end blocks are separated by the '|' character. Any remaining space is filled
+    with the '*' character, instead of garbage. 
   */
   if (r == 1)
   {
@@ -36,8 +35,8 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
     {
       //Insert partition name into buffer
       buffer[bufferPosition] = diskP[partitionInProg].partitionName;
-      //Begin filling the buffer with partition information such as size, and blocks consumed
-      fillPartition(buffer, diskP[partitionInProg].partitionSize, bufferPosition + 1);
+      //Begin filling the buffer with partition information such as size, start, and end blocks.
+      fillPartitionInfo(buffer, diskP[partitionInProg].partitionSize, bufferPosition + 1);
       //Use the global indexer to adjust buffer position
       bufferPosition = bufferIndexer; 
       partitionInProg++;
@@ -52,46 +51,43 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
     myDisk -> writeDiskBlock(0, buffer);
     
     //Reset all critical shared variables.
-    buffer[64];
+    buffer[0]=0;
     bufferIndexer = 0;
-    blockCount = 1;
+    blockCount = 0;
+    rootOffset = 1;
   }
 
   /* else  read back the partition information from the DISK1 */
   else if (r == 0)
   {
     diskP = new DiskPartition[partCount];
+
     myDisk->readDiskBlock(0, buffer);
     int partitionInProg = 0;
-    int bufferPosition = 0;
 
     while(partitionInProg < partCount)
     {
-
       //Assign the partition name
-      diskP[partitionInProg].partitionName = buffer[bufferPosition];
-
-      //Retrieve and assign the partition size.
-      int partSize = retrievePartition(buffer, bufferPosition + 1);
-      diskP[partitionInProg].partitionSize = partSize;
-
-      //We can assess how the buffer indexing needs to be adjusted based on how many
-      //blocks there are in the disk for this partition
-      int blockCount = ceil(partSize/64.0);
-
-      //Adjust the buffer postion based on the calculated block count, the characters read this
-      //round, and the formatting character. Multiply by four because this is how the 
-      //blocks are formatted
-      bufferPosition += ((blockCount*4) + bufferIndexer + 1);
+      diskP[partitionInProg].partitionName = buffer[bufferIndexer];
       
-      //This variable will need to be re-adjusted each time because the partion size and 
-      //formatting variable jump will rarely be the same
-      bufferIndexer = 0;
+      //Retrieve and assign the partition size.
+      bufferIndexer++;
+      int partSize = retrievePartitionInfo(buffer);
+      diskP[partitionInProg].partitionSize = partSize;
+      
+      //Record starting block
+      int startBlock = retrievePartitionInfo(buffer);
+      diskP[partitionInProg].startBlock = startBlock;
+
+      //Record ending block
+      int endBlock = retrievePartitionInfo(buffer);
+      diskP[partitionInProg].endBlock = endBlock;
+
       partitionInProg++;
     }
 
     //Reset all critical shared variables.
-    buffer[64];
+    buffer[0] = 0;
     bufferIndexer = 0;
   }
 }
@@ -106,10 +102,11 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
 //Still iffy on this
 int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
 {
-  //Disk class already returns many of these values, simply check if partition exists.
+  //Disk class already returns many of these values, simply check if partition exists,
+  //and if the requested block number is within it's range of available blocks.
   for(int i = 0; i < partCount; i++)
   {
-    if (diskP[i].partitionName == partitionname)
+    if ((diskP[i].partitionName == partitionname) && ((blknum - diskP[i].startBlock) <= (diskP[i].endBlock - diskP[i].startBlock)))
     {
       myDisk->readDiskBlock(blknum, blkdata);
       return 0;
@@ -129,10 +126,11 @@ int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
 //Still iffy on this
 int DiskManager::writeDiskBlock(char partitionname, int blknum, char *blkdata)
 {
-  //Disk class already returns many of these values, simply check if partition exists.
+  //Disk class already returns many of these values, simply check if partition exists,
+  //and if the requested block number is within it's range of available blocks.
   for(int i = 0; i < partCount; i++)
   {
-    if (diskP[i].partitionName == partitionname)
+    if ((diskP[i].partitionName == partitionname) && ((blknum - diskP[i].startBlock) <= (diskP[i].endBlock - diskP[i].startBlock)))
     {
       myDisk->writeDiskBlock(blknum, blkdata);
       return 0;
@@ -160,80 +158,87 @@ int DiskManager::getPartitionSize(char partitionname)
   return -1;
 }
 
-void DiskManager::fillPartition(char * buffer, int num, int pos)
+void DiskManager::fillPartitionInfo(char * buffer, int num, int pos)
 {
-
-  //Keep track of how many blocks this partition will need.
-  int blockNum = ceil(num/64.0);
+  
+  //Use a private global variable to keep track of total blocks, 
+  blockCount += num;
 
   //Get the partition size ready for buffer insertion
   string sizeString = to_string(num);
+  int strSize = sizeString.length();
 
-  for(int i = 0; i < sizeString.length(); i++)
+  for(int i = 0; i < strSize; i++)
   {
     buffer[pos+i] = sizeString[i];
   }
   
   //Adjust position based on what has just been added
-  pos += sizeString.length();
+  pos += strSize;
 
   //Formatting symbol for separating name and size of partition from blocks used 
   buffer[pos] = '|';
   pos++;
-  
-  for (int i = 0; i < blockNum; i++)
-  {
-    
-    //Get the block number ready for insertion, using the global block count variable
-    //that keeps track how many overall blocks we have.
-    string intString = to_string(blockCount);
-    int stringLengthRemainder = 4 - intString.length();
-    
-    //Format the block number so that it is easy to identify it
-    if (stringLengthRemainder != 0)
-    {
-        intString.insert(0, stringLengthRemainder, '0');
-    }
-    
-    //Insert into the buffer
-    for (int j = 0; j < 4; j++)
-    {
-        buffer[pos+j] = intString[j];
-    }
+  /*
+    The root offset is used to exclude the 0th block of any partition, as this is reserved for
+    the root. The second (pos # 1) block is reserved for the bitvector, but this still needs to be available
+    for our partition manager. With this logic in mind, the rootOffset is our 'start block'
+    for each partition.
+  */
+  string startBlock = to_string(rootOffset);
+  string endBlock = to_string(blockCount);
 
-    //Adjust position
-    pos+=4;
-    blockCount++;
+  //Once the first partition has been written, we need to bump up the offset by one, but 
+  //only once.
+  if (rootOffset == 1)
+  {
+    rootOffset++;
   }
-  
-  //Add another formatting character, and adjust the position again.
-  //Be sure to update the global indexer with this information.
+
+  rootOffset+=num;
+
+  //Write the start block, and insert the formatting character.
+  strSize = startBlock.length();
+  for (int i = 0; i < strSize; i++)
+  {
+    buffer[pos] = startBlock[i];
+    pos++;
+  }
   buffer[pos] = '|';
   pos++;
+
+  //Write the end block, and insert the formatting character.
+  strSize = endBlock.length();
+  for (int i = 0; i < strSize; i++)
+  {
+    buffer[pos] = endBlock[i];
+    pos++;
+  }
+  buffer[pos] = '|';
+  pos++;
+  //Adjust the overall buffer index
   bufferIndexer = pos;
   return;
 }
 
-int DiskManager::retrievePartition(char * buffer, int pos)
+int DiskManager::retrievePartitionInfo(char * buffer)
 {
   char temp[4];
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 5; i++)
   {
     
-    //If a formatting character is encountered, adjust the indexer by to two to skip over
-    //it, and break out of the loop, the size has been recored.
-    if (buffer[pos+i] == '|')
+    //If a formatting character is encountered, adjust the indexer to skip over
+    //it, and break out of the loop. Because of the way the table is formated, pertinent 
+    //information has been recorded.
+    if (buffer[bufferIndexer] == '|')
     {
-      bufferIndexer+=2;
+      bufferIndexer++;
       break;
     }
 
-    temp[i] = buffer[pos+i];
+    temp[i] = buffer[bufferIndexer];
     bufferIndexer++;
   }
 
   return atoi(temp);
 }
-
-
-

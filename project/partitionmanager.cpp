@@ -1,6 +1,7 @@
 #include "disk.h"
 #include "diskmanager.h"
 #include "partitionmanager.h"
+#include "bitvector.h"
 #include <iostream>
 using namespace std;
 
@@ -10,13 +11,19 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
   myDM = dm;
   myPartitionName = partitionname;
   myPartitionSize = myDM->getPartitionSize(myPartitionName);
+  //myBitVector = new BitVector(myPartitionSize);
+  char buffer[64];
 
   /* If needed, initialize bit vector to keep track of free and allocted
      blocks in this partition */
+  readDiskBlock(0, buffer);
+
+
 }
 
 PartitionManager::~PartitionManager()
 {
+  //delete[] myBitVector;
 }
 
 /*

@@ -4,7 +4,10 @@ class DiskPartition {
   public:
     char partitionName;
     int partitionSize;
+    int startBlock;
+    int endBlock;
 };
+
 
 class DiskManager {
   Disk *myDisk;
@@ -13,8 +16,13 @@ class DiskManager {
 
   /* declare other private members here */
   private:
-    void fillPartition(char * buffer, int num, int pos);
-    int retrievePartition(char * buffer, int pos);
+    void fillPartitionInfo(char * buffer, int num, int pos);
+    int retrievePartitionInfo(char * buffer);
+    //Global shared variables to help with block listing and indexing
+    int bufferIndexer = 0;
+    int rootOffset = 1;
+    int blockCount = 0;
+
 
   public:
     DiskManager(Disk *d, int partCount, DiskPartition *dp);

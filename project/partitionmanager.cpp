@@ -11,19 +11,34 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
   myDM = dm;
   myPartitionName = partitionname;
   myPartitionSize = myDM->getPartitionSize(myPartitionName);
-  //myBitVector = new BitVector(myPartitionSize);
+  myBitVector = new BitVector(myPartitionSize);
+  char temp[64];
   char buffer[64];
 
   /* If needed, initialize bit vector to keep track of free and allocted
      blocks in this partition */
   readDiskBlock(0, buffer);
 
+  if (buffer[0] != '#')
+  {
+    myBitVector->setBitVector((unsigned int *) buffer);
+  }
 
+  else if (buffer[0] == '#')
+  {
+    myBitVector->setBitVector((unsigned int *) temp);
+  }
+
+  //Bit probably needs to be set here for first block of each partition, 
+  //root is automatically not available. 
+  //setbit?
+  myBitVector->getBitVector((unsigned int *) temp);
+  writeDiskBlock(0, temp); 
 }
 
 PartitionManager::~PartitionManager()
 {
-  //delete[] myBitVector;
+  delete[] myBitVector;
 }
 
 /*

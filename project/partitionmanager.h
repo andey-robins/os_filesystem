@@ -1,6 +1,8 @@
+#include "bitvector.h"
+
 class PartitionManager {
   DiskManager *myDM;
-  //BitVector *myBitVector;
+  BitVector *myBitVector;
 
 
   public:

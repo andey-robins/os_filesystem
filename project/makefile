@@ -22,3 +22,6 @@ partitionmanager.o: partitionmanager.cpp  partitionmanager.h
 
 dmTester: dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o
 	$(CC) $(CFLAGS)  -o dmTester dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o
+
+clean:
+	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o DISK1 dmTester

@@ -5,7 +5,6 @@
 #include <iostream>
 using namespace std;
 
-
 PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int partitionsize)
 {
   myDM = dm;
@@ -21,7 +20,7 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
 
   if (buffer[0] != '#')
   {
-    myBitVector->setBitVector((unsigned int *) buffer);
+    myBitVector->setBitVector((unsigned int *)buffer);
   }
 
   else if (buffer[0] == '#')
@@ -29,11 +28,11 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
     myBitVector->setBitVector((unsigned int *) temp);
   }
 
-  //Bit probably needs to be set here for first block of each partition, 
-  //root is automatically not available. 
+  //Bit probably needs to be set here for first block of each partition,
+  //root is automatically not available.
   //setbit?
-  myBitVector->getBitVector((unsigned int *) temp);
-  writeDiskBlock(0, temp); 
+  myBitVector->getBitVector((unsigned int *)temp);
+  writeDiskBlock(0, temp);
 }
 
 PartitionManager::~PartitionManager()
@@ -47,6 +46,16 @@ PartitionManager::~PartitionManager()
 int PartitionManager::getFreeDiskBlock()
 {
   /* write the code for allocating a partition block */
+  // this should be able to stat at two since block 0 is partition info and block 1 is the root dir?
+  for (int i = 0; i < 64; i++)
+  {
+    if (myBitVector->testBit(i) == OFF)
+    {
+      return i;
+    }
+  }
+
+  return -1;
 }
 
 /*
@@ -55,8 +64,26 @@ int PartitionManager::getFreeDiskBlock()
 int PartitionManager::returnDiskBlock(int blknum)
 {
   /* write the code for deallocating a partition block */
-}
+  // reset block's bitvector to free it
+  myBitVector->resetBit(blknum);
 
+  // overwrite the deallocated block with cs
+  char overwriteBuffer[64];
+  for (int i = 0; i < 64; i++)
+  {
+    overwriteBuffer[i] = 'c';
+  }
+
+  // overwrite and return result
+  if (this->writeDiskBlock(blknum, overwriteBuffer) == 0)
+  {
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
 
 int PartitionManager::readDiskBlock(int blknum, char *blkdata)
 {
@@ -68,7 +95,7 @@ int PartitionManager::writeDiskBlock(int blknum, char *blkdata)
   return myDM->writeDiskBlock(myPartitionName, blknum, blkdata);
 }
 
-int PartitionManager::getBlockSize() 
+int PartitionManager::getBlockSize()
 {
   return myDM->getBlockSize();
 }

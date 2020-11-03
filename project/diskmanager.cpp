@@ -108,7 +108,8 @@ int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
   {
     if ((diskP[i].partitionName == partitionname) && ((blknum - diskP[i].startBlock) <= (diskP[i].endBlock - diskP[i].startBlock)))
     {
-      myDisk->readDiskBlock(blknum, blkdata);
+      int absoluteDiskBlock = diskP[i].startBlock + blknum;
+      myDisk->readDiskBlock(absoluteDiskBlock, blkdata);
       return 0;
     }
   }
@@ -132,7 +133,8 @@ int DiskManager::writeDiskBlock(char partitionname, int blknum, char *blkdata)
   {
     if ((diskP[i].partitionName == partitionname) && ((blknum - diskP[i].startBlock) <= (diskP[i].endBlock - diskP[i].startBlock)))
     {
-      myDisk->writeDiskBlock(blknum, blkdata);
+      int absoluteDiskBlock = diskP[i].startBlock + blknum;
+      myDisk->writeDiskBlock(absoluteDiskBlock, blkdata);
       return 0;
     }
   }

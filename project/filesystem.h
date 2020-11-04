@@ -1,11 +1,25 @@
+#include "fileFeatures.h"
+#include "deque"
+
+
 class FileSystem {
   DiskManager *myDM;
   PartitionManager *myPM;
   char myfileSystemName;
   int myfileSystemSize;
+
+  struct DerivedLockedFile : LockedFiles{};
+  struct DerivedOpenFile : OpenFiles{};
+  struct DerivedFileDescriptor : FileDescriptor{};
+
+  DerivedFileDescriptor fileDescriptorGenerator;
+  DerivedOpenFile openFileInstance;
+  DerivedLockedFile lockedFileInstance;
+  deque<DerivedLockedFile>* lockedFileQueue;
+  deque<DerivedOpenFile>* openFileQueue;
   
   /* declare other private members here */
-
+ 
   public:
     FileSystem(DiskManager *dm, char fileSystemName);
     int createFile(char *filename, int fnameLen);

@@ -16,47 +16,18 @@ class LockedFiles
         bool isLocked;
         int fileNameLength;
         int lockId;
-    
-    /*public:
-        void addToDeque(char fName, int fNameLen, int lId);
-        void removeFromDeque(char fName, int fNameLen, int lId);
 
-
-    LockedFiles(void);
-    ~LockedFiles(void);
-
-    LockedFiles::LockedFiles(void)
-    {
-        //For now, 1 deque should be enough.
-        lockedQueue = new deque<LockedFiles>[1];
-
-        if (lockedQueue == NULL)
-        {
-            cout << "Not enough memory to create the queue" << endl;
-            exit(-1);
-        }
-    }
-
-    LockedFiles::~LockedFiles(void)
-    {
-        delete[] lockedQueue;
-    }
-
-    void LockedFiles::addToDeque(char fName, int fNameLen, int lId)
-    {
-
-        fileName = fName;
-        fileName = fNameLen;
-        lockId = lId;
-        isLocked = true;
-        lock
-    }*/
 };
 
 class OpenFiles
 {
     public:
+        char fileName;
+        int fileNameLength;
         int fileDescription;
+        int readWritePointer;
+        char mode;
+        int lockId;
 };
 
 
@@ -74,12 +45,12 @@ class FileDescriptor
     void FileDescriptor::initShuffle(void)
     {
         //Don't want any keys to be equal to zero
-        for (int i = 1; i < 100; i++)
+        for (int i = 1; i < 101; i++)
         {
             keyValues[i-1] = i;
         }
         int sizeOfArr = sizeof(keyValues) / sizeof(keyValues[0]);
-        shuffle(keyValues, keyValues+sizeOfArr, default_random_engine(0));
+        shuffle(keyValues, keyValues+sizeOfArr, default_random_engine(1));
     }
 
     int FileDescriptor::getUniqueNumber(void)

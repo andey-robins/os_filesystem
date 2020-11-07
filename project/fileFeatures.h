@@ -12,7 +12,7 @@ using namespace std;
 class LockedFiles 
 {
     public:
-        char fileName;
+        char* fileName;
         bool isLocked;
         int fileNameLength;
         int lockId;
@@ -46,10 +46,10 @@ class FileDescriptor
     
     public:
         int uniqueNumberResult;
-        void initShuffle(void);
-        int getUniqueNumber(void);
+    //    void initShuffle(void);
+    //    int getUniqueNumber(void);
 
-    void FileDescriptor::initShuffle(void)
+    void initShuffle(void)
     {
         //Don't want any keys to be equal to zero
         for (int i = 1; i < 101; i++)
@@ -60,7 +60,7 @@ class FileDescriptor
         shuffle(keyValues, keyValues+sizeOfArr, default_random_engine(1));
     }
 
-    int FileDescriptor::getUniqueNumber(void)
+    int getUniqueNumber(void)
     {
         uniqueNumberResult = keyValues[keyIndexer];
         keyIndexer++;

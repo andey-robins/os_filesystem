@@ -234,10 +234,5 @@ char *dirNodeToBuffer(DNode d)
     }
     return dNode;
 }
-DNode createDirNode(char name){};
-DNode loadDirNode(int blknum){};
-
-INode createIndirNode(){};
-INode loadIndirNode(int blknum){};
 
 #endif

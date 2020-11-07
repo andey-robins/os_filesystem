@@ -31,14 +31,15 @@ public:
 
 class FileEntry
 {
-    char name;
-    int subPointer;
-    char type;
+    public:
+        char name;
+        int subPointer;
+        char type;
 };
 
 FNode createFileNode(char name, int dirAddressOne)
 {
-    char buffer[64];
+    /*char buffer[64];
     buffer[0] = name;
     buffer[1] = 'F';
     for (int i = 2; i < 6; i++)
@@ -55,7 +56,26 @@ FNode createFileNode(char name, int dirAddressOne)
     for (int i = 10; i < 64; i++)
     {
         buffer[i] = '0';
+    }*/
+
+    FNode fNode;
+    fNode.name = name;
+    fNode.type = 'F';
+    fNode.size = 0;  
+    fNode.directAddress[0] = dirAddressOne;
+    fNode.indirectAddress = 0;
+    
+    for (int i = 0; i < 3; i++)
+    {
+        fNode.emoji[i] = '0';
     }
+
+    for (int i = 0; i < 3; i++)
+    {
+        fNode.date[i] = '0';
+    }
+
+    return fNode;
 }
 
 FNode loadFileNode(int blknum){};
@@ -105,8 +125,37 @@ char *fileNodeToBuffer(FNode f)
 
     return inode;
 }
+
+
+char *dirNodeToBuffer(DNode d)
+{
+    char dNode[64];
+    int bufferIndexer = 1;
+    dNode[0] = d.nextDirectPointer;
+
+    //int entriesSize = sizeof(d.entries)/sizeof(d.entries[0]);
+    
+    for (int i = 0; i < 10; i++)
+    {
+        FileEntry temp = d.entries[i];
+        dNode[bufferIndexer] = temp.name;
+        bufferIndexer++;
+        const char *subPointerChars = std::to_string(temp.subPointer).c_str();
+        int subPointerCharsSize = sizeof(subPointerChars)/sizeof(subPointerChars[0]);
+        for (int j = 0; j < subPointerCharsSize; j++)
+        {
+            dNode[bufferIndexer] = subPointerChars[j];
+            bufferIndexer++;
+        }
+        bufferIndexer++;
+        dNode[bufferIndexer] = temp.type;
+        bufferIndexer++;
+    }
+    return dNode;
+}
 DNode createDirNode(char name){};
 DNode loadDirNode(int blknum){};
+
 INode createIndirNode(){};
 INode loadIndirNode(int blknum){};
 

@@ -31,6 +31,7 @@ public:
 
 class FileEntry
 {
+public:
     char name;
     int subPointer;
     char type;
@@ -105,9 +106,87 @@ char *fileNodeToBuffer(FNode f)
 
     return inode;
 }
-DNode createDirNode(char name){};
-DNode loadDirNode(int blknum){};
-INode createIndirNode(){};
-INode loadIndirNode(int blknum){};
+
+DNode createDirNode(char name, int ptr, char type)
+{
+    DNode inode;
+    inode.entries[0].name = name;
+    inode.entries[0].subPointer = ptr;
+    inode.entries[0].type = type;
+    return inode;
+}
+
+DNode loadDirNode(char *nodeBuffer)
+{
+    DNode inode;
+
+    // 10 "Entries"
+    for (int i = 0; i < 10; i++)
+    {
+        inode.entries[i].name = nodeBuffer[i * 6];
+
+        // get each char from the subpointer
+        char subpointerChars[4];
+        for (int j = 0; j < 4; j++)
+        {
+            subpointerChars[j] = nodeBuffer[i * 6 + j + 1];
+        }
+        inode.entries[i].subPointer = atoi(subpointerChars);
+
+        inode.entries[i].type = nodeBuffer[i * 6 + 5];
+    }
+
+    // next dir
+    char nextPointerChars[4];
+    for (int i = 0; i < 4; i++)
+    {
+        nextPointerChars[i] = nodeBuffer[i + 60];
+    }
+    inode.nextDirectPointer = atoi(nextPointerChars);
+
+    return inode;
+}
+
+INode createIndirNode()
+{
+    INode inode;
+    return inode;
+}
+
+INode loadIndirNode(char *nodebuffer)
+{
+    INode inode;
+
+    // direct addresses
+    for (int i = 0; i < 16; i++)
+    {
+        char directPointerChars[4];
+        for (int j = 0; j < 4; j++)
+        {
+            directPointerChars[j] = nodebuffer[i * 4 + j];
+        }
+        inode.directPointers[i] = atoi(directPointerChars);
+    }
+
+    return inode;
+}
+
+char *indirNodeToBuffer(INode n)
+{
+    char inode[64];
+
+    // direct addresses
+    for (int i = 0; i < 16; i++)
+    {
+        // convert addresses to characters
+        const char *dirAddrChars = std::to_string(n.directPointers[i]).c_str();
+        for (int j = 0; j < 4; j++)
+        {
+            inode[i * 4 + j] = dirAddrChars[j];
+        }
+    }
+
+    return inode;
+}
 
 #endif

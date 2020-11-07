@@ -27,7 +27,63 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
 }
 int FileSystem::createFile(char *filename, int fnameLen)
 {
-  
+  // validate filename
+  for (int i = 0; i < fnameLen; i++) {
+    if (i % 2 == 0) {
+      // should be /
+      if (filename[i] != '/') {
+        return -3;
+      }
+    } else {
+      // should be alpha char
+      if (!isalpha(filename[i])) {
+        return -3;
+      }
+    }
+  }
+
+  // file exists: return -1
+  if (!false) {
+    return -1;
+  }
+
+  // allocate the file blocks
+  int nodeBlock = myPM->getFreeDiskBlock();
+  int dataBlock = myPM->getFreeDiskBlock();
+
+  // check that there is space for the file
+  if (nodeBlock == -1 || dataBlock == -1) {
+    // if the node was correctly allocated, free the block since we can't create the file
+    if (nodeBlock != -1) {
+      myPM->returnDiskBlock(nodeBlock);
+    }
+
+    // i believe this should be redundant, but to be safe, also check the dataBlock in case it was allocated incorrectly -andey
+    if (nodeBlock != -1) {
+      myPM->returnDiskBlock(dataBlock);
+    }
+
+    return  -2;
+  }
+
+  // create file iNode
+  char fileInode[64];
+  fileInode[0] = filename[fnameLen - 1]; // set file name
+  fileInode[1] = 'F'; // set type as file
+  // set fileInode.size
+  // set fileInode.directAddr.1 to dataBlock
+  // set fileInode.indirectaddr to nothing
+  // set fileInode.attributes
+
+
+  // write iNode to disk
+  int writeStatus = myPM->writeDiskBlock(nodeBlock, fileInode);
+
+  // check for some other error
+  if (writeStatus != 0) {
+    return -4;
+  }
+  return 0;
 }
 int FileSystem::createDirectory(char *dirname, int dnameLen)
 {

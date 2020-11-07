@@ -20,7 +20,6 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   lockedFileQueue = new deque<DerivedLockedFile>[1];
   openFileQueue = new deque<DerivedOpenFile>[1];
   // Do Need something for the indirect inode(s)?
-
 }
 int FileSystem::createFile(char *filename, int fnameLen)
 {
@@ -36,7 +35,43 @@ int FileSystem::lockFile(char *filename, int fnameLen)
 }
 int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
 {
-
+  //Create a boolean for whether the desired locked file has been found within the locked file queue
+  bool found;
+  
+  //Iterate through the locked file queue looking for file matching filename
+  deque<int>::iterator it;
+  for (auto it = lockedFileQueue->begin(); it != lockedFileQueue->end(); it++)
+  {
+    DerivedLockedFile temp = *it;
+    //First we check to see if the lengths of our filenames are equal
+    if (temp.fileNameLength == fnameLen)
+    {
+      //Begin checking for character equality to see if filenames are of equal length
+      found = true;
+      for (int i = 0; i < fnameLen; i++) 
+      {
+        if (filename[i] != temp.fileName[i])
+        {
+          found = false;
+          break;
+        }
+      }
+      //This is the case where we have found a matching filename in the locked file queue
+      if (found) 
+      {
+        if (temp.lockId == lockId)
+        {
+          lockedFileQueue->erase(it);
+          //Return value indicating successful unlocking of the file (erased from queue)
+          return 0;
+        }
+        //The lock IDs do not match, so we return -1
+        else return -1;
+      }
+    }
+  }
+  //Return value for any other reason
+  return -2;
 }
 int FileSystem::deleteFile(char *filename, int fnameLen)
 {
@@ -46,14 +81,29 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
 
 }
+//Will Malone: The openFile system is very incomplete right now
 int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 {
-
+  //Address the case where the mode provided is invalid
+  if (mode != 'r' && mode != 'w' && mode != 'm') return -2;
+  //Attempt to unlock the file with lockId and save the return value
+  int unlockResult = unlockFile(filename, fnameLen, lockId);
+  //Return -3 to signify locking problem if the file is locked and lockId does not match or if 
+  //the file is not in the locked queue but lockId is not -1
+  if (unlockResult == -1) return -3;
+  else if (unlockResult == -2 && lockId != -1) return -3;
+  
+  //INCOMPLETE: Search inodes to try to find file with name filename
+  //Return -1 to signify that the file could not be found within the filesystem
+  return -1;
+  
+  //Create the open file instance and add it to the open file queue
   int fileDescriptor = fileDescriptorGenerator.getUniqueNumber();
   openFileInstance.fileDescription = fileDescriptor;
   openFileQueue->push_back(openFileInstance);
   return fileDescriptor;
-
+  //Return value for any other unspecified reason
+  return -4;
 }
 int FileSystem::closeFile(int fileDesc)
 {

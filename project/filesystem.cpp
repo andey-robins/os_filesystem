@@ -18,6 +18,8 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   myfileSystemName = fileSystemName;
   myfileSystemSize = myDM->getPartitionSize(fileSystemName);
   myPM = new PartitionManager(myDM, myfileSystemName, myfileSystemSize);
+  
+
   //Should only need one deque for each file system. Need to get them allocated here.
   lockedFileQueue = new deque<DerivedLockedFile>[1];
   openFileQueue = new deque<DerivedOpenFile>[1];

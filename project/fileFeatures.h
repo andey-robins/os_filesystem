@@ -30,6 +30,13 @@ class OpenFiles
         int lockId;
 };
 
+class FileExists
+{
+    public:
+        char fileName;
+        int fileNameLength;
+};
+
 
 class FileDescriptor
 {
@@ -59,13 +66,6 @@ class FileDescriptor
         keyIndexer++;
         return uniqueNumberResult;
     }
-};
-
-
-//Do we need this?
-class INode
-{
-
 };
 
 #endif

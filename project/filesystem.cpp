@@ -3,6 +3,7 @@
 #include "partitionmanager.h"
 #include "filesystem.h"
 #include "fileFeatures.h"
+#include  "nodes.h"
 #include <time.h>
 #include <cstdlib>
 #include <iostream>
@@ -23,10 +24,12 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   //Should only need one deque for each file system. Need to get them allocated here.
   lockedFileQueue = new deque<DerivedLockedFile>[1];
   openFileQueue = new deque<DerivedOpenFile>[1];
+  fileExistsQueue = new deque<DerivedFileExists>[1];
   // Do Need something for the indirect inode(s)?
 }
 int FileSystem::createFile(char *filename, int fnameLen)
 {
+  
   // validate filename
   for (int i = 0; i < fnameLen; i++) {
     if (i % 2 == 0) {
@@ -46,6 +49,10 @@ int FileSystem::createFile(char *filename, int fnameLen)
   if (!false) {
     return -1;
   }
+
+  fileExistsInstance.fileName = filename;
+  fileExistsInstance.fileNameLength = fnameLen;
+  fileExistsQueue->push_back(fileExistsInstance);
 
   // allocate the file blocks
   int nodeBlock = myPM->getFreeDiskBlock();
@@ -91,7 +98,7 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
 }
 int FileSystem::lockFile(char *filename, int fnameLen)
 {
-
+  //Andey will do.
 }
 int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
 {
@@ -230,8 +237,20 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
       //If the rwpointer is at zero, this means that we can start at the start of a block.
       //If it is not, we need to start at the pointer, and adjust from there
       int memBlocksRequired = ceil((len + temp.readWritePointer)/64.0);
-
-      //Need to get Inode setup next, still trying to do this
+      char fNode[64];
+      
+      //Need to load the file iNode that was written to disk from createFile 
+      myPM->readDiskBlock(memBlocksRequired, fNode);
+      //Must convert this buffer into an FNode object
+      FNode fNodeObj = loadFileNode(fNode);
+      //Need to check if indirect addressing is required based on required blocks
+      if (memBlocksRequired > 3)
+      {
+        char indirectINode[64];
+        myPM->readDiskBlock(fNodeObj.indirectAddress, indirectINode);
+      }
+      
+       
     }
   }
 

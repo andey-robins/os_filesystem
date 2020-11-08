@@ -11,12 +11,15 @@ class FileSystem {
   struct DerivedLockedFile : LockedFiles{};
   struct DerivedOpenFile : OpenFiles{};
   struct DerivedFileDescriptor : FileDescriptor{};
+  struct DerivedFileExists : FileExists{};
 
   DerivedFileDescriptor fileDescriptorGenerator;
   DerivedOpenFile openFileInstance;
   DerivedLockedFile lockedFileInstance;
+  DerivedFileExists fileExistsInstance;
   deque<DerivedLockedFile>* lockedFileQueue;
   deque<DerivedOpenFile>* openFileQueue;
+  deque<DerivedFileExists>* fileExistsQueue;
   
   /* declare other private members here */
  

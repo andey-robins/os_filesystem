@@ -11,12 +11,15 @@ class FileSystem {
   struct DerivedLockedFile : LockedFiles{};
   struct DerivedOpenFile : OpenFiles{};
   struct DerivedFileDescriptor : FileDescriptor{};
+  struct DerivedFileExists : FileExists{};
 
   DerivedFileDescriptor fileDescriptorGenerator;
   DerivedOpenFile openFileInstance;
   DerivedLockedFile lockedFileInstance;
+  DerivedFileExists fileExistsInstance;
   deque<DerivedLockedFile>* lockedFileQueue;
   deque<DerivedOpenFile>* openFileQueue;
+  deque<DerivedFileExists>* fileExistsQueue;
   
   /* declare other private members here */
  
@@ -37,7 +40,9 @@ class FileSystem {
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
-
+    int findFileINode(DerivedOpenFile exisitingOpenFile);
+    void assignDirectAddress(FNode fNode, int memBlocks, int fileSize);
+    void assignIndirectAddress(FNode fNode, int directBlocks);
     /* declare other public members here */
 
 };

@@ -12,6 +12,7 @@ class FileSystem {
   struct DerivedOpenFile : OpenFiles{};
   struct DerivedFileExists : FileExists{};
   struct DerivedFileDescriptor : FileDescriptor{};
+  struct DerivedFileExists : FileExists{};
 
   // what're these used for as class level variables? -andey
   DerivedFileDescriptor fileDescriptorGenerator;
@@ -41,7 +42,9 @@ class FileSystem {
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
-
+    int findFileINode(DerivedOpenFile exisitingOpenFile);
+    void assignDirectAddress(FNode fNode, int memBlocks, int fileSize);
+    void assignIndirectAddress(FNode fNode, int directBlocks);
     /* declare other public members here */
 
 };

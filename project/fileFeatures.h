@@ -35,6 +35,7 @@ class FileExists
     public:
         char* fileName;
         int fileNameLength;
+        int iNodePosition;
 };
 
 

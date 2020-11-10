@@ -153,6 +153,8 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
   if (unlockResult == -1) return -3;
   else if (unlockResult == -2 && lockId != -1) return -3;
   
+  deque<int>::iterator it;
+  for (auto it = 
   //INCOMPLETE: Search inodes to try to find file with name filename
   //Return -1 to signify that the file could not be found within the filesystem
   return -1;

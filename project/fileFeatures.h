@@ -22,7 +22,7 @@ class LockedFiles
 class OpenFiles
 {
     public:
-        char fileName;
+        char* fileName;
         int fileNameLength;
         int fileDescription;
         int readWritePointer;
@@ -33,7 +33,7 @@ class OpenFiles
 class FileExists
 {
     public:
-        char fileName;
+        char* fileName;
         int fileNameLength;
 };
 

@@ -348,7 +348,7 @@ void FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize)
       while (diff != 0)
       {
         //Do I need to release a block via the PM as well?
-        myPM->returnDiskBlock(fNode.directAddress[blocksInUse]);
+        myPM->returnDiskBlock(fNode.directAddress[blocksInUse-1]);
         fNode.directAddress[blocksInUse] = 0;
         blocksInUse--;
         diff = memBlocks-blocksInUse;
@@ -360,7 +360,7 @@ void FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize)
     {
       while (diff !=0)
       {
-        fNode.directAddress[blocksInUse] = myPM->getFreeDiskBlock();
+        fNode.directAddress[blocksInUse-1] = myPM->getFreeDiskBlock();
         blocksInUse++;
         diff = memBlocks-blocksInUse;
       }
@@ -374,6 +374,11 @@ void FileSystem::assignIndirectAddress(FNode fNode, int directBlocks)
   {
     //We need to create and indirect address
     int indirectBlock = myPM->getFreeDiskBlock();
+    //char *fileInode = FNode::fileNodeToBuffer(FNode::createFileNode(filename[fnameLen - 1], dataBlock));
+
+    // write iNode to disk
+    //int writeStatus = myPM->writeDiskBlock(nodeBlock, fileInode);
+
     if (indirectBlock == -1)
     {
       //Not enough space, so return.

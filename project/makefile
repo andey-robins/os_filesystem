@@ -28,13 +28,13 @@ partitionmanager.o: partitionmanager.cpp  partitionmanager.h
 #
 # NODES
 #
-nodes/dnode.o: nodes/dnode.cpp nodes/dnode.h
+dnode.o: nodes/dnode.cpp nodes/dnode.h
 	$(CC) $(CFLAGS) -c nodes/dnode.cpp
 
-nodes/fnode.o: nodes/fnode.cpp nodes/fnode.h
+fnode.o: nodes/fnode.cpp nodes/fnode.h
 	$(CC) $(CFLAGS) -c nodes/fnode.cpp
 
-nodes/inode.o: nodes/inode.cpp nodes/inode.h
+inode.o: nodes/inode.cpp nodes/inode.h
 	$(CC) $(CFLAGS) -c nodes/inode.cpp
 
 #

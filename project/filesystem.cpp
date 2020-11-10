@@ -148,7 +148,6 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
 
 }
-//Will Malone: The openFile system is very incomplete right now
 int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 {
   //Address the case where the mode provided is invalid
@@ -160,19 +159,45 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
   if (unlockResult == -1) return -3;
   else if (unlockResult == -2 && lockId != -1) return -3;
   
+  //Begin searching through the file existence queue to see if the file exists
   deque<int>::iterator it;
-  for (auto it = 
-  //INCOMPLETE: Search inodes to try to find file with name filename
+  for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); it++)
+  {
+    DerivedFileExists tmp = *it;
+    if (tmp.fileNameLength == fnameLen)
+    {
+      bool found = true;
+      for (int i = 0; i < fnameLen; i++)
+      {
+        if (filename[i] != tmp.fileName[i])
+        {
+          found = false;
+          break;
+        }
+      }
+      //We have found the correct file in our system, now we open it
+      if (found)
+      {
+        //Create the open file instance and add it to the open file queue
+        //We first have to generate a fileDescriptor integer and fill in
+        //the DerivedOpenFile fields of fileDescriptor, fileName, fileNameLength,
+        //readWritePointer, mode, and ?lockId.
+        DerivedOpenFile opened;
+        int fileDescriptor = fileDescriptorGenerator.getUniqueNumber();
+        opened.fileDescription = fileDescriptor;
+        opened.fileName = filename;
+        opened.fileNameLength = fnameLen;
+        opened.readWritePointer = 0;
+        opened.mode = mode;
+        opened.lockId = lockId;
+        openFileQueue->push_back(opened);
+        //Return the fileDescriptor to indicate a successful open
+        return fileDescriptor;
+      }
+    }
+  }
   //Return -1 to signify that the file could not be found within the filesystem
   return -1;
-  
-  //Create the open file instance and add it to the open file queue
-  int fileDescriptor = fileDescriptorGenerator.getUniqueNumber();
-  openFileInstance.fileDescription = fileDescriptor;
-  openFileQueue->push_back(openFileInstance);
-  return fileDescriptor;
-  //Return value for any other unspecified reason
-  return -4;
 }
 int FileSystem::closeFile(int fileDesc)
 {
@@ -279,7 +304,37 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
 }
 int FileSystem::seekFile(int fileDesc, int offset, int flag)
 {
-
+  //Negative offsets are invalid if the flag is nonzero, so we return -1
+  if (flag != 0 && offfset < 0) return -1;
+  //Iterate through the queue of open files, looking for one with a matching file description
+  for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+  {
+    DerivedOpenFile tmp = *it;
+    //Check if we have found the desired open file
+    if (tmp.fileDescription == fileDesc)
+    {
+      //Calculate the value of updated pointer and check it before altering original
+      int potential_rw = tmp.readWritePointer;
+      if (flag == 0) potential_rw += offset;
+      else potential_rw = offset;
+      //INCOMPLETE
+      //Need to check if the potential_rw pointer is outside the bounds of the file
+      //Either need a filesize in openfile data structure or need to access the inode
+      //corresponding to the file to access filesize.
+      //Currently, we are simply using a dummy size of 100 bytes as an upper bound.
+      if (potential_rw > 0 && potential_rw < 100)
+      {
+        //Mutate the read/write pointer as desired and return 0 to mark success
+        tmp.readWritePointer = potential_rw;
+        return 0;
+      }
+      //Do not modify the pointer and return -2 to indicate the offset and flag would have
+      //resulted in a read_write pointer outside of the file bounds
+      else return -2;
+    }
+  }
+  //The file was not found matching the descriptor given, so return -1
+  return -1;
 }
 int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2)
 {

@@ -47,4 +47,4 @@ dmTester: dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o files
 # CLEAN
 #
 clean:
-	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o DISK1 dmTester
+	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o DISK1 dmTester

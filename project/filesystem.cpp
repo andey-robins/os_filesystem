@@ -3,6 +3,7 @@
 #include "partitionmanager.h"
 #include "filesystem.h"
 #include "fileFeatures.h"
+#include "nodes/nodes.h"
 #include <time.h>
 #include <cstdlib>
 #include <iostream>
@@ -23,6 +24,7 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   //Should only need one deque for each file system. Need to get them allocated here.
   lockedFileQueue = new deque<DerivedLockedFile>[1];
   openFileQueue = new deque<DerivedOpenFile>[1];
+  fileExistsQueue = new deque<DerivedFileExists>[1];
   // Do Need something for the indirect inode(s)?
 }
 int FileSystem::createFile(char *filename, int fnameLen)
@@ -43,8 +45,13 @@ int FileSystem::createFile(char *filename, int fnameLen)
   }
 
   // file exists: return -1
-  if (!false) {
-    return -1;
+  deque<int>::iterator it;
+  for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); ++it)
+  {
+    DerivedFileExists temp = *it;
+    if (temp.fileName == filename) {
+      return -1;
+    }
   }
 
   // allocate the file blocks
@@ -67,13 +74,7 @@ int FileSystem::createFile(char *filename, int fnameLen)
   }
 
   // create file iNode
-  char fileInode[64];
-  fileInode[0] = filename[fnameLen - 1]; // set file name
-  fileInode[1] = 'F'; // set type as file
-  // set fileInode.size
-  // set fileInode.directAddr.1 to dataBlock
-  // set fileInode.indirectaddr to nothing
-  // set fileInode.attributes
+  char *fileInode = FNode::fileNodeToBuffer(FNode::createFileNode(filename[fnameLen - 1], dataBlock));
 
 
   // write iNode to disk
@@ -83,6 +84,11 @@ int FileSystem::createFile(char *filename, int fnameLen)
   if (writeStatus != 0) {
     return -4;
   }
+
+  // everything has gone correctly so store the file's existence
+  fileExistsInstance.fileName = filename;
+  fileExistsInstance.fileNameLength = fnameLen;
+  fileExistsQueue->push_back(fileExistsInstance);
   return 0;
 }
 int FileSystem::createDirectory(char *dirname, int dnameLen)

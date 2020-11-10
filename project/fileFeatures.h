@@ -33,7 +33,7 @@ class OpenFiles
 class FileExists
 {
     public:
-        char fileName;
+        char* fileName;
         int fileNameLength;
 };
 

@@ -28,23 +28,23 @@ partitionmanager.o: partitionmanager.cpp  partitionmanager.h
 #
 # NODES
 #
-nodes/dnode.o: dnode.cpp dnode.h
-	$(CC) $(CFLAGS) -c dnode.cpp
+nodes/dnode.o: nodes/dnode.cpp nodes/dnode.h
+	$(CC) $(CFLAGS) -c nodes/dnode.cpp
 
-nodes/fnode.o: fnode.cpp fnode.h
-	$(CC) $(CFLAGS) -c fnode.cpp
+nodes/fnode.o: nodes/fnode.cpp nodes/fnode.h
+	$(CC) $(CFLAGS) -c nodes/fnode.cpp
 
-nodes/inode.o: inode.cpp inode.h
-	$(CC) $(CFLAGS) -c inode.cpp
+nodes/inode.o: nodes/inode.cpp nodes/inode.h
+	$(CC) $(CFLAGS) -c nodes/inode.cpp
 
 #
 # MAIN BUILD
 #
-dmTester: dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o nodes/dnode.o nodes/fnode.o nodes/inode.o
-	$(CC) $(CFLAGS) -o dmTester dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o nodes/dnode.o nodes/fnode.o nodes/inode.o
+dmTester: dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o dmTester dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
 #
 # CLEAN
 #
 clean:
-	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o DISK1 dmTester
+	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 dmTester

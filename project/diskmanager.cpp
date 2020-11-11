@@ -191,14 +191,6 @@ void DiskManager::fillPartitionInfo(char * buffer, int num, int pos, int diskPIn
   diskP[diskPIndex].startBlock = atoi(startBlock.c_str());
   string endBlock = to_string(blockCount);
   diskP[diskPIndex].endBlock = atoi(endBlock.c_str());
-  
-
-  //Once the first partition has been written, we need to bump up the offset by one, but 
-  //only once.
-  if (rootOffset == 1)
-  {
-    rootOffset++;
-  }
 
   rootOffset+=num;
 

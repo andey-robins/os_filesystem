@@ -36,7 +36,7 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
       //Insert partition name into buffer
       buffer[bufferPosition] = diskP[partitionInProg].partitionName;
       //Begin filling the buffer with partition information such as size, start, and end blocks.
-      fillPartitionInfo(buffer, diskP[partitionInProg].partitionSize, bufferPosition + 1);
+      fillPartitionInfo(buffer, diskP[partitionInProg].partitionSize, bufferPosition + 1, partitionInProg);
       //Use the global indexer to adjust buffer position
       bufferPosition = bufferIndexer; 
       partitionInProg++;
@@ -158,7 +158,7 @@ int DiskManager::getPartitionSize(char partitionname)
   return -1;
 }
 
-void DiskManager::fillPartitionInfo(char * buffer, int num, int pos)
+void DiskManager::fillPartitionInfo(char * buffer, int num, int pos, int diskPIndex)
 {
   
   //Use a private global variable to keep track of total blocks, 
@@ -186,7 +186,12 @@ void DiskManager::fillPartitionInfo(char * buffer, int num, int pos)
     for each partition.
   */
   string startBlock = to_string(rootOffset);
+  //Make sure our DiskP structure has the position of our start and end blocks when disk is
+  //created
+  diskP[diskPIndex].startBlock = atoi(startBlock.c_str());
   string endBlock = to_string(blockCount);
+  diskP[diskPIndex].endBlock = atoi(endBlock.c_str());
+  
 
   //Once the first partition has been written, we need to bump up the offset by one, but 
   //only once.

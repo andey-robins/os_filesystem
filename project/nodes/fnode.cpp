@@ -1,7 +1,8 @@
 #include "fnode.h"
 #include <string.h>
 #include <iostream>
-
+using std::endl;
+using std::cerr;
 FNode FNode::createFileNode(char name, int dirAddressOne)
 {
     FNode fNode;
@@ -9,6 +10,8 @@ FNode FNode::createFileNode(char name, int dirAddressOne)
     fNode.type = 'F';
     fNode.size = 0;  
     fNode.directAddress[0] = dirAddressOne;
+    fNode.directAddress[1] = 0;
+    fNode.directAddress[2] = 0;
     fNode.indirectAddress = 0;
     
     for (int i = 0; i < 3; i++)
@@ -18,7 +21,7 @@ FNode FNode::createFileNode(char name, int dirAddressOne)
 
     for (int i = 0; i < 3; i++)
     {
-        fNode.date[i] = '0';
+        fNode.date[i] = 0;
     }
 
     return fNode;
@@ -26,7 +29,7 @@ FNode FNode::createFileNode(char name, int dirAddressOne)
 
 FNode FNode::loadFileNode(char* buffer)
 {
-    FNode node = FNode();
+    FNode node;
     //The first char in the buffer is the node name
     node.name = buffer[0];
     //Next is node type
@@ -43,71 +46,71 @@ FNode FNode::loadFileNode(char* buffer)
     {
       for (int i = 0; i < 4; i++)
       {
-        tmp[i] = buffer[7 + i + (4 * j)];
+        tmp[i] = buffer[6 + i + (4 * j)];
       }
       node.directAddress[j] = atoi(tmp);
     }
     //Read in next 4 chars which will be the indirect address
-    for (int i = 18; i < 22; i++)
+    for (int i = 0; i < 4; i++)
     {
-      tmp[i-19] = buffer[i];
+      tmp[i] = buffer[i + 18];
     }
     node.indirectAddress = atoi(tmp);
-    //Next 3 bytes is the date
+    //Next 12 bytes is the date
     for (int i = 0; i < 3; i++)
     {
-      node.date[i] = (int) buffer[22 + i];
+      for (int j = 0; j < 4; j++)
+      {
+        tmp[j] = buffer[22 + j + (4 * i)];
+      }
+      node.date[i] = atoi(tmp);
     }
     //Final 3 bytes is the emoji
     for (int i = 0; i < 3; i++)
     {
-      node.emoji[i] = (int) buffer[25 + i];
+      node.emoji[i] = buffer[34 + i];
     }
     return node;
 };
 
-char* FNode::fileNodeToBuffer(FNode f)
+void FNode::fileNodeToBuffer(FNode f, char* inode)
 {
-    char inode[64];
     inode[0] = f.name;
     inode[1] = 'F';
-
     // size
-    const char *sizeChars = std::to_string(f.size).c_str();
-    for (int i = 0; i < 4; i++)
-    {
-        inode[i + 2] = sizeChars[i];
-    }
-
+    intToChar(inode, f.size, 2);
     // three direct addresses
     for (int i = 0; i < 3; i++)
     {
         // direct address
-        const char *dirAddrChars = std::to_string(f.directAddress[i]).c_str();
-        for (int j = 0; j < 4; j++)
-        {
-            inode[j + 6] = dirAddrChars[j];
-        }
+        intToChar(inode, f.directAddress[i], 6 + (4*i));
     }
-
+    //indirect address
+    intToChar(inode, f.indirectAddress, 18);
     // date
     for (int i = 0; i < 3; i++)
     {
-        const char *dateByte = std::to_string(f.date[i]).c_str();
-        inode[i + 10] = dateByte[0];
+        intToChar(inode, f.date[i], 22 + (4*i));
     }
-
     // emoji
     for (int i = 0; i < 3; i++)
     {
-        inode[i + 13] = f.emoji[i];
+        inode[i + 34] = f.emoji[i];
     }
 
     // padding
-    for (int i = 16; i < 64; i++)
+    for (int i = 37; i < 64; i++)
     {
         inode[i] = '0';
     }
+}
 
-    return inode;
+//Helper method for fileNodeToBuffer to facilitate easy conversion from int to char
+void FNode::intToChar(char * buffer, int num, int pos) {
+    char four[4];
+    sprintf( four, "%.4d", num);
+    for (int i = 0; i < 4; i++) {
+        buffer[i + pos] = four[i];
+    }
+    return;
 }

@@ -44,7 +44,7 @@ class FileSystem {
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int findFileINode(DerivedOpenFile exisitingOpenFile);
     int assignDirectAddress(FNode fNode, int memBlocks, int fileSize, int iNodeBlockPosition);
-    int assignIndirectAddress(FNode fNode, int directBlocks, int memBlocks, int iNodeBlockPosition);
+    int assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlockPosition);
     /* declare other public members here */
 
 };

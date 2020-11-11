@@ -418,7 +418,7 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
 int FileSystem::seekFile(int fileDesc, int offset, int flag)
 {
   //Negative offsets are invalid if the flag is nonzero, so we return -1
-  if (flag != 0 && offfset < 0) return -1;
+  if (flag != 0 && offset < 0) return -1;
   //Iterate through the queue of open files, looking for one with a matching file description
   for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
   {
@@ -488,8 +488,7 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
   if (memBlocks > 3)
   {
     //If we are here, we know that we will have the max of three direct addresses filled.
-    int directBlocks = 3;
-    int success = assignIndirectAddress(fNode, directBlocks, memBlocks, inodeBlockPosition);
+    int success = assignIndirectAddress(fNode, memBlocks, inodeBlockPosition);
     if (success == -1)
     {
       return -1;
@@ -547,12 +546,12 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
   return 0;
 }
 
-int FileSystem::assignIndirectAddress(FNode fNode, int directBlocks, int memBlocks, int iNodeBlockPosition)
+int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlockPosition)
 {
   //Need to determine how many direct pointers we need in our indirect based on how many
   //blocks are required, and how many have been taken up by direct addressing.
 
-  int diff = memBlocks - directBlocks;
+  int diff = memBlocks - 3;
 
   //Take care of all direct addresses unless they are already filled, remember to not
   //mess with the first one.
@@ -662,5 +661,4 @@ int FileSystem::assignIndirectAddress(FNode fNode, int directBlocks, int memBloc
     }
   }
   return 0;
-}
 }

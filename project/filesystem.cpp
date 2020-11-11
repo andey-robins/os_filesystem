@@ -110,10 +110,10 @@ int FileSystem::lockFile(char *filename, int fnameLen)
   try
   {
     // file exists: no return -2
-    deque<int>::iterator it;
-    for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); ++it)
+    deque<int>::iterator itLock;
+    for (auto itLock = fileExistsQueue->begin(); itLock != fileExistsQueue->end(); ++itLock)
     {
-      DerivedFileExists temp = *it;
+      DerivedFileExists temp = *itLock;
       if (temp.fileName == filename)
       {
         return -2;
@@ -121,10 +121,9 @@ int FileSystem::lockFile(char *filename, int fnameLen)
     }
 
     // file is unlocked: no return -1
-    deque<int>::iterator it;
-    for (auto it = lockedFileQueue->begin(); it != lockedFileQueue->end(); ++it)
+    for (auto itLock = lockedFileQueue->begin(); itLock != lockedFileQueue->end(); ++itLock)
     {
-      DerivedLockedFile temp = *it;
+      DerivedLockedFile temp = *itLock;
       if (temp.fileName == filename)
       {
         return -1;
@@ -132,10 +131,9 @@ int FileSystem::lockFile(char *filename, int fnameLen)
     }
 
     // file isn't opened: open return -3
-    deque<int>::iterator it;
-    for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+    for (auto itLock = openFileQueue->begin(); itLock != openFileQueue->end(); ++itLock)
     {
-      DerivedOpenFile temp = *it;
+      DerivedOpenFile temp = *itLock;
       if (temp.fileName == filename)
       {
         return -3;
@@ -317,7 +315,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
   for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
   {
     DerivedOpenFile temp = *it;
-    if (temp.mode == 'w')
+    if (temp.mode == 'w' && temp.fileDescription == fileDesc)
     {
       //If the rwpointer is at zero, this means that we can start at the start of a block.
       //If it is not, we need to start at the pointer, and adjust from there

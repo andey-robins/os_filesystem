@@ -1,5 +1,6 @@
 #include "fileFeatures.h"
 #include "deque"
+#include "nodes/nodes.h"
 
 
 class FileSystem {
@@ -12,7 +13,6 @@ class FileSystem {
   struct DerivedOpenFile : OpenFiles{};
   struct DerivedFileExists : FileExists{};
   struct DerivedFileDescriptor : FileDescriptor{};
-  struct DerivedFileExists : FileExists{};
 
   // what're these used for as class level variables? -andey
   DerivedFileDescriptor fileDescriptorGenerator;

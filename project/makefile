@@ -2,7 +2,7 @@ CC=g++
 #CFLAGS = -ggdb 
 CFLAGS = -Wall -ggdb
 
-all: dmTester
+all: drTester
 
 #
 # FILE SYSTEM
@@ -40,11 +40,11 @@ inode.o: nodes/inode.cpp nodes/inode.h
 #
 # MAIN BUILD
 #
-dmTester: dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o dmTester dmTester.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+drTester: driver.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o drTester driver.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
 #
 # CLEAN
 #
 clean:
-	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 dmTester
+	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 drTester

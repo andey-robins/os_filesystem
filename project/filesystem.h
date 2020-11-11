@@ -43,8 +43,8 @@ class FileSystem {
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int findFileINode(DerivedOpenFile exisitingOpenFile);
-    void assignDirectAddress(FNode fNode, int memBlocks, int fileSize);
-    void assignIndirectAddress(FNode fNode, int directBlocks);
+    int assignDirectAddress(FNode fNode, int memBlocks, int fileSize, int iNodeBlockPosition);
+    int assignIndirectAddress(FNode fNode, int directBlocks, int memBlocks, int iNodeBlockPosition);
     /* declare other public members here */
 
 };

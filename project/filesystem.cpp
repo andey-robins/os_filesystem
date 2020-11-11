@@ -25,6 +25,13 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   openFileQueue = new deque<DerivedOpenFile>[1];
   fileExistsQueue = new deque<DerivedFileExists>[1];
   // Do Need something for the indirect inode(s)?
+  /*char rootCheck[64];
+  myPM -> readDiskBlock(1, rootCheck);
+  if (rootCheck[1] == '#' || rootCheck[1]== 'c')
+  {
+    rootCheck[0]='/';
+    myPM->writeDiskBlock(1, rootCheck);
+  }*/
 }
 int FileSystem::createFile(char *filename, int fnameLen)
 {
@@ -413,6 +420,44 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
 
 int FileSystem::appendFile(int fileDesc, char *data, int len)
 {
+  //Unique nums generated will never be below 1, should also be an int
+  if (fileDesc < 1 || typeid(fileDesc) != typeid(int))
+  {
+    return -1;
+  }
+
+  //Is length negative?
+  else if (len < 0)
+  {
+    return -2;
+  }
+
+  //To check if operation is permitted, make sure that the file is open in the
+  //openFileQueue, and it's mode is write. If not, we can't write to it, so return -3
+  deque<int>::iterator it;
+  for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+  {
+    DerivedOpenFile temp = *it;
+    if (temp.mode == 'w' && temp.fileDescription == fileDesc)
+    {
+      char fNodeBuff[64];
+      int iNodeBlockPosition = findFileINode(temp);
+
+      if (iNodeBlockPosition == -1)
+      {
+        return -3;
+      }
+      //Need to load the file iNode that was written to disk from createFile
+      myPM->readDiskBlock(iNodeBlockPosition, fNodeBuff);
+      //Must convert this buffer into an FNode object
+      FNode fNodeObj = FNode::loadFileNode(fNodeBuff);
+      //To append, set the read/write pointer to the size of the file, and call write file 
+      //with this new start block/location information.
+      temp.readWritePointer = fNodeObj.size;
+      return writeFile(fileDesc, data, len);
+    }
+  }
+  return -3;
 }
 int FileSystem::seekFile(int fileDesc, int offset, int flag)
 {

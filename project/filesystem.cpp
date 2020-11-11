@@ -10,6 +10,7 @@
 #include <deque>
 #include <typeinfo>
 #include <cmath>
+#include <cstring>
 using namespace std;
 
 FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
@@ -420,22 +421,27 @@ int FileSystem::seekFile(int fileDesc, int offset, int flag)
   //Negative offsets are invalid if the flag is nonzero, so we return -1
   if (flag != 0 && offset < 0) return -1;
   //Iterate through the queue of open files, looking for one with a matching file description
+  deque<int>::iterator it;
   for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
   {
     DerivedOpenFile tmp = *it;
     //Check if we have found the desired open file
     if (tmp.fileDescription == fileDesc)
     {
+      //Look for the same file in the file existence queue so we can find its iNodePosition
+      //We then read the block data into a temporary buffer and create a FNode object from it to
+      //access the size of the File in bytes
+      int iNodePos = findFileINode(tmp);
+      char tempBuff[64];
+      myPM->readDiskBlock(iNodePos, tempBuff);
+      FNode fileINode = FNode::loadFileNode(tempBuff);
+
       //Calculate the value of updated pointer and check it before altering original
       int potential_rw = tmp.readWritePointer;
       if (flag == 0) potential_rw += offset;
       else potential_rw = offset;
-      //INCOMPLETE
-      //Need to check if the potential_rw pointer is outside the bounds of the file
-      //Either need a filesize in openfile data structure or need to access the inode
-      //corresponding to the file to access filesize.
-      //Currently, we are simply using a dummy size of 100 bytes as an upper bound.
-      if (potential_rw > 0 && potential_rw < 100)
+      //Check if the new read write pointer is valid based on the file size above
+      if (potential_rw > 0 && potential_rw < fileINode.size)
       {
         //Mutate the read/write pointer as desired and return 0 to mark success
         tmp.readWritePointer = potential_rw;

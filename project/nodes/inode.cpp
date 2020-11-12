@@ -5,6 +5,10 @@
 INode INode::createIndirNode()
 {
     INode inode;
+    for (int i = 0; i < 16; i++)
+    {
+        inode.directPointers[i] = 0;
+    }
     return inode;
 }
 
@@ -26,20 +30,20 @@ INode INode::loadIndirNode(char *nodebuffer)
     return inode;
 }
 
-char* INode::indirNodeToBuffer(INode n)
+void INode::indirNodeToBuffer(INode n, char* outBuff)
 {
-    char inode[64];
-
     // direct addresses
     for (int i = 0; i < 16; i++)
     {
-        // convert addresses to characters
-        const char *dirAddrChars = std::to_string(n.directPointers[i]).c_str();
-        for (int j = 0; j < 4; j++)
-        {
-            inode[i * 4 + j] = dirAddrChars[j];
-        }
+        intToChar(outBuff, n.directPointers[i], 4*i);
     }
+}
 
-    return inode;
+void INode::intToChar(char * buffer, int num, int pos) {
+    char four[5];
+    sprintf( four, "%.4d", num);
+    for (int i = 0; i < 4; i++) {
+        buffer[i + pos] = four[i];
+    }
+    return;
 }

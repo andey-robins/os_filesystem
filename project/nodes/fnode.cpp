@@ -105,9 +105,10 @@ void FNode::fileNodeToBuffer(FNode f, char* inode)
     }
 }
 
+
 //Helper method for fileNodeToBuffer to facilitate easy conversion from int to char
 void FNode::intToChar(char * buffer, int num, int pos) {
-    char four[4];
+    char four[5];
     sprintf( four, "%.4d", num);
     for (int i = 0; i < 4; i++) {
         buffer[i + pos] = four[i];

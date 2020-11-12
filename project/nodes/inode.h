@@ -10,7 +10,8 @@ public:
     // functions to interact with the struct
     static INode createIndirNode();
     static INode loadIndirNode(char *nodebuffer);
-    static char* indirNodeToBuffer(INode n);
+    static void indirNodeToBuffer(INode n, char* outBuff);
+    static void intToChar(char * buffer, int num, int pos);
 };
 
 #endif

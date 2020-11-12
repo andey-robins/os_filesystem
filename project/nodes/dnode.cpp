@@ -8,6 +8,14 @@ DNode DNode::createDirNode(char name, int ptr, char type)
     inode.entries[0].name = name;
     inode.entries[0].subPointer = ptr;
     inode.entries[0].type = type;
+    //Fill the rest of the inode with nothing for now
+    for (int i = 1; i < 10; i++)
+    {
+        inode.entries[i].name = '0';
+        inode.entries[i].subPointer = 0;
+        inode.entries[i].type = '0';
+    }
+    inode.nextDirectPointer = 0;
     return inode;
 }
 
@@ -42,29 +50,24 @@ DNode DNode::loadDirNode(char *nodeBuffer)
     return inode;
 }
 
-char* DNode::dirNodeToBuffer(DNode d)
+void DNode::dirNodeToBuffer(DNode d, char* outBuff)
 {
-    char dNode[64];
-    int bufferIndexer = 1;
-    dNode[0] = d.nextDirectPointer;
-
-    //int entriesSize = sizeof(d.entries)/sizeof(d.entries[0]);
-    
     for (int i = 0; i < 10; i++)
     {
         FileEntry temp = d.entries[i];
-        dNode[bufferIndexer] = temp.name;
-        bufferIndexer++;
-        const char *subPointerChars = std::to_string(temp.subPointer).c_str();
-        int subPointerCharsSize = sizeof(subPointerChars)/sizeof(subPointerChars[0]);
-        for (int j = 0; j < subPointerCharsSize; j++)
-        {
-            dNode[bufferIndexer] = subPointerChars[j];
-            bufferIndexer++;
-        }
-        bufferIndexer++;
-        dNode[bufferIndexer] = temp.type;
-        bufferIndexer++;
+        outBuff[6*i] = temp.name;
+        intToChar(outBuff, temp.subPointer, (6*i) + 1);
+        outBuff[(6*i) + 5] = temp.type;
     }
-    return dNode;
+    intToChar(outBuff, d.nextDirectPointer, 60);
+    return;
+}
+
+void DNode::intToChar(char * buffer, int num, int pos) {
+    char four[5];
+    sprintf( four, "%.4d", num);
+    for (int i = 0; i < 4; i++) {
+        buffer[i + pos] = four[i];
+    }
+    return;
 }

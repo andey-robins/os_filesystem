@@ -1,0 +1,30 @@
+CC=g++
+#CFLAGS = -ggdb 
+CFLAGS = -Wall -ggdb
+
+all: nodeTest 
+
+#
+# NODES
+#
+dnode.o: dnode.cpp dnode.h
+	$(CC) $(CFLAGS) -c dnode.cpp
+
+fnode.o: fnode.cpp fnode.h
+	$(CC) $(CFLAGS) -c fnode.cpp
+
+inode.o: inode.cpp inode.h
+	$(CC) $(CFLAGS) -c inode.cpp
+
+#
+# MAIN BUILD
+#
+nodeTest: nodeTest.cpp dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o nodeTester nodeTest.cpp dnode.o fnode.o inode.o
+
+#
+# CLEAN
+#
+clean:
+	rm -f nodeTester dnode.o fnode.o inode.o
+

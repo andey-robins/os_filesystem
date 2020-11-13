@@ -91,7 +91,9 @@ int FileSystem::createFile(char *filename, int fnameLen)
   }
 
   // create file iNode
-  char *fileInode = FNode::fileNodeToBuffer(FNode::createFileNode(filename[fnameLen - 1], dataBlock));
+  char fileInode[64];
+  FNode fileNode = FNode::createFileNode(filename[fnameLen - 1], dataBlock);
+  FNode::fileNodeToBuffer(fileNode, fileInode);
 
   // write iNode to disk
   int writeStatus = myPM->writeDiskBlock(nodeBlock, fileInode);
@@ -396,13 +398,13 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
           if (isIndirect == false)
           {
             //If we are here, we have reached the end of a direct block or about to exit loop
-            myPM->writeDiskBlock(fNodeObj.directAddress[startingBlock - 1], writeBuffer);
+            myPM->writeDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
           }
 
           else if (isIndirect == true)
           {
             //If we are here, we have gone into indirect addressing or about to exit loop
-            myPM->writeDiskBlock(iNode.directPointers[(startingBlock - 1) - 3], writeBuffer);
+            myPM->writeDiskBlock(iNode.directPointers[(startingBlock) - 3], writeBuffer);
           }
           startingBlock++;
         }
@@ -411,7 +413,9 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
       int written = loopIndex;
       fNodeObj.size = temp.readWritePointer + written;
       temp.readWritePointer = location;
-      myPM -> writeDiskBlock(iNodeBlockPosition, FNode::fileNodeToBuffer(fNodeObj));
+      char outputBuffer[64];
+      FNode::fileNodeToBuffer(fNodeObj, outputBuffer);
+      myPM -> writeDiskBlock(iNodeBlockPosition, outputBuffer);
       return written;
     }
   }
@@ -590,7 +594,9 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
       }
     }
     //Write changes to disk
-    myPM->writeDiskBlock(inodeBlockPosition, FNode::fileNodeToBuffer(fNode));
+    char outputBuffer[64];
+    FNode::fileNodeToBuffer(fNode, outputBuffer);
+    myPM->writeDiskBlock(inodeBlockPosition, outputBuffer);
   }
   return 0;
 }
@@ -619,7 +625,9 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
     }
   }
   //Write direct addressing to disk.
-  myPM->writeDiskBlock(iNodeBlockPosition, FNode::fileNodeToBuffer(fNode));
+  char outputBuffer[64];
+  FNode::fileNodeToBuffer(fNode, outputBuffer);
+  myPM->writeDiskBlock(iNodeBlockPosition, outputBuffer);
 
   //This means that we have no indirect addressing set up yet.
   if (fNode.indirectAddress == 0)
@@ -647,7 +655,8 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
       indirNode.directPointers[i] = directPointerValue;
     }
 
-    char *indirNodeBuff = INode::indirNodeToBuffer(indirNode);
+    char indirNodeBuff[64];
+    INode::indirNodeToBuffer(indirNode, indirNodeBuff);
 
     // write indirect node to disk
     int writeStatus = myPM->writeDiskBlock(indirectBlock, indirNodeBuff);
@@ -706,7 +715,9 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
         }
       }
       //Write new information to disk
-      myPM->writeDiskBlock(fNode.indirectAddress, INode::indirNodeToBuffer(existingIndirectNode));
+      char outputBuffer[64];
+      INode::indirNodeToBuffer(existingIndirectNode, outputBuffer);
+      myPM->writeDiskBlock(fNode.indirectAddress, outputBuffer);
     }
   }
   return 0;

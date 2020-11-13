@@ -16,7 +16,8 @@ public:
     // functions for interacting with the structure
     static FNode createFileNode(char name, int dirAddressOne);
     static FNode loadFileNode(char* buffer);
-    static char* fileNodeToBuffer(FNode f);
+    static void fileNodeToBuffer(FNode f, char* inode);
+    static void intToChar(char * buffer, int num, int pos);
 };
 
 #endif

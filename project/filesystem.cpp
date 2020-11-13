@@ -265,29 +265,40 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 }
 int FileSystem::closeFile(int fileDesc)
 {
-  if (fileDesc < 1 || typeid(fileDesc) != typeid(int))
+  try
   {
-    //File descriptor is invalid.
-    return -1;
-  }
-  //Our file descriptor is valid, and we can begin iterating through our deque
-  //to find the structure related to the file that is currently open, and needs to be closed.
-  else if (fileDesc >= 1)
-  {
-    deque<int>::iterator it;
-    for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+  
+    if (fileDesc < 1 || typeid(fileDesc) != typeid(int))
     {
-      DerivedOpenFile temp = *it;
-      if (temp.fileDescription == fileDesc)
-      {
-        openFileQueue->erase(it);
-        return 0;
+      //File descriptor is invalid.
+      return -1;
+    }
+    //Our file descriptor is valid, and we can begin iterating through our deque
+    //to find the structure related to the file that is currently open, and needs to be closed.
+    else if (fileDesc >= 1)
+    {
+      deque<int>::iterator it;
+      for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+      { 
+        DerivedOpenFile temp = *it;
+
+        if (temp.fileDescription == fileDesc)
+        {
+          openFileQueue->erase(it);
+          return 0;
+        }
       }
     }
-  }
 
-  //Anything else happens, return -2
-  return -2;
+    //Can't find item in the queue, so it must not exist or the descriptor is not valid
+    // return -1
+    return -1;
+  }
+  //Anything else, return -2
+  catch(exception e)
+  {
+    return -2;
+  }
 }
 
 int FileSystem::readFile(int fileDesc, char *data, int len)

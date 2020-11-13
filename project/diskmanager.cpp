@@ -73,15 +73,17 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
       bufferIndexer++;
       int partSize = retrievePartitionInfo(buffer);
       diskP[partitionInProg].partitionSize = partSize;
+      //cout << "partsize is " << partSize << endl;
       
       //Record starting block
       int startBlock = retrievePartitionInfo(buffer);
-      
+
       diskP[partitionInProg].startBlock = startBlock;
 
       //Record ending block
       int endBlock = retrievePartitionInfo(buffer);
       diskP[partitionInProg].endBlock = endBlock;
+      //cout << "End block is " << endBlock << endl;
 
       partitionInProg++;
     }
@@ -109,6 +111,9 @@ int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
     if ((diskP[i].partitionName == partitionname) && (blknum <= diskP[i].endBlock - diskP[i].startBlock))
     {
       int absoluteDiskBlock = diskP[i].startBlock + blknum;
+      //cout << "In DM READ at relative block " << blknum << endl;
+      //cout << "In DM READ at start block " << diskP[i].startBlock << endl;
+      //cout << "In DM READ at block " << absoluteDiskBlock << endl;
       return myDisk->readDiskBlock(absoluteDiskBlock, blkdata);
     }
   }
@@ -133,11 +138,6 @@ int DiskManager::writeDiskBlock(char partitionname, int blknum, char *blkdata)
     if ((diskP[i].partitionName == partitionname) && (blknum <= diskP[i].endBlock - diskP[i].startBlock))
     {
       int absoluteDiskBlock = diskP[i].startBlock + blknum;
-      //cout << "disk P info is  " << diskP[i].partitionName << " With start block " << diskP[i].startBlock << endl;
-      //cout << "disk P info is  " << diskP[i].partitionName << " With end block " << diskP[i].endBlock << endl;
-      cout << "In DM WRTIE requested blknum was " << blknum << endl;
-      cout << "In DM WRITE at actual block " << absoluteDiskBlock << endl;
-      cout << "Writing the following buffer " << blkdata << endl;
       return myDisk->writeDiskBlock(absoluteDiskBlock, blkdata);
     }
   }
@@ -191,6 +191,7 @@ void DiskManager::fillPartitionInfo(char * buffer, int num, int pos, int diskPIn
     for each partition.
   */
   string startBlock = to_string(rootOffset);
+
   diskP[diskPIndex].startBlock = atoi(startBlock.c_str());
   string endBlock = to_string(blockCount);
   diskP[diskPIndex].endBlock = atoi(endBlock.c_str());
@@ -201,6 +202,7 @@ void DiskManager::fillPartitionInfo(char * buffer, int num, int pos, int diskPIn
   {
     rootOffset++;
   }
+
 
   rootOffset+=num;
 

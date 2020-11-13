@@ -216,15 +216,30 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
   //Address the case where the mode provided is invalid
   if (mode != 'r' && mode != 'w' && mode != 'm')
     return -2;
-  //Attempt to unlock the file with lockId and save the return value
-  int unlockResult = unlockFile(filename, fnameLen, lockId);
-  //Return -3 to signify locking problem if the file is locked and lockId does not match or if
-  //the file is not in the locked queue but lockId is not -1
-  if (unlockResult == -1) return -3;
-  else if (unlockResult == -2 && lockId != -1) return -3;
+  //Check if the file is currently locked. If the file is locked and the lockId does
+  //not match with its lockId, return -3 to indicate locking error
+  bool locked = true;
+  deque<int>::iterator it;
+  for (auto it = lockedFileQueue->begin(); it != lockedFileQueue->end(); it++)
+  {
+    DerivedLockedFile tmp = *it;
+    if (tmp.fileNameLength == fnameLen)
+    {
+      if (strcmp(filename, tmp.fileName) == 0)
+      {
+        if (lockId != tmp.lockId) return -3;
+        else
+        {
+          locked = true;
+          break;
+        } 
+      }
+    }
+  }
+  //Return -3 to indicate the file is not locked and lockId is not -1
+  if (!locked && lockId != -1) return -3;
   
   //Begin searching through the file existence queue to see if the file exists
-  deque<int>::iterator it;
   for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); it++)
   {
     DerivedFileExists tmp = *it;

@@ -24,14 +24,7 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   lockedFileQueue = new deque<DerivedLockedFile>[1];
   openFileQueue = new deque<DerivedOpenFile>[1];
   fileExistsQueue = new deque<DerivedFileExists>[1];
-  // Do Need something for the indirect inode(s)?
-  /*char rootCheck[64];
-  myPM -> readDiskBlock(1, rootCheck);
-  if (rootCheck[1] == '#' || rootCheck[1]== 'c')
-  {
-    rootCheck[0]='/';
-    myPM->writeDiskBlock(1, rootCheck);
-  }*/
+  fileDescriptorGenerator.initShuffle();
 }
 int FileSystem::createFile(char *filename, int fnameLen)
 {
@@ -116,6 +109,7 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
 }
 int FileSystem::lockFile(char *filename, int fnameLen)
 {
+  bool isFileExisting = false; 
   try
   {
     // file exists: no return -2
@@ -125,8 +119,13 @@ int FileSystem::lockFile(char *filename, int fnameLen)
       DerivedFileExists temp = *itLock;
       if (temp.fileName == filename)
       {
-        return -2;
+        isFileExisting = true;
       }
+    }
+
+    if (!isFileExisting)
+    {
+      return -2;
     }
 
     // file is unlocked: no return -1

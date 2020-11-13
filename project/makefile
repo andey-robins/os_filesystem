@@ -40,8 +40,8 @@ inode.o: nodes/inode.cpp nodes/inode.h
 #
 # MAIN BUILD
 #
-drTester: driver.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o drTester driver.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+drTester: driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o drTester driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
 #
 # CLEAN

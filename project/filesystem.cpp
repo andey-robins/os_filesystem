@@ -316,9 +316,117 @@ int FileSystem::closeFile(int fileDesc)
   }
 }
 
+/*
+  Returns the following values based on the following conditions
+  -1 if file descriptor is invalid
+  -2 if length is negative
+  -3 if operation is not permitted
+  returns the number of bytes read, if successful
+
+*/
 int FileSystem::readFile(int fileDesc, char *data, int len)
 {
-  return 0;
+  // invalid file descriptor
+  if (fileDesc < 1 || typeid(fileDesc) != typeid(int))
+  {
+    return -1;
+  }
+
+  // negative length to read
+  if (len < 0) {
+    return -2;
+  }
+
+  // an operation will not be permitted if:
+  //  a) the file isn't open or
+  //  b) the mode isn't 'r'
+  bool operationPermitted = false;
+  deque<int>::iterator it;
+  DerivedOpenFile activeFile;
+  for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it) {
+    DerivedOpenFile temp = *it;
+    if (temp.mode == 'r' && temp.fileDescription == fileDesc) {
+      // file fulfills operation conditions
+      operationPermitted = true;
+      activeFile = temp;
+    }
+  }
+
+  // operation not permitted
+  if (!operationPermitted) {
+    return -3;
+  }
+
+  //
+  // READ OPERATION
+  //
+
+  // get the position of the file iNode
+  int fileInodePosition = findFileINode(activeFile);
+  if (fileInodePosition == -1) {
+    return -3;
+  }
+
+  // read in the iNode
+  char fileNodeInputBuffer[64];
+  int res = myPM->readDiskBlock(fileInodePosition, fileNodeInputBuffer);
+  if (res != 0) {
+    return -3;
+  }
+  
+  // convert the read iNode buffer to an Fnode object
+  FNode fileInode = FNode::loadFileNode(fileNodeInputBuffer);
+
+  char activeBlock[64];
+  int nextRwPointer = 0;
+
+  for (int i = activeFile.readWritePointer; i < len + activeFile.readWritePointer && i < fileInode.size; i++) {
+    // check if we need new block
+    if (i = activeFile.readWritePointer || i % 64 == 0) {
+
+      int neededBlock = floor(i / 64.0);
+
+      // checks that our neededBlock won't be outside the max possible size
+      // is this redundant due to the i < fileInode.size check for the forloop?
+      if (neededBlock > 19) {
+        return -3;
+      }
+
+      // determine if we need to get from direct or indirect addressing & block address
+      if (neededBlock < 3) {
+        // direct address
+        neededBlock = fileInode.directAddress[neededBlock];
+      } else {
+        // indirect address
+        char indirectNodeBuffer[64];
+        res = myPM->readDiskBlock(fileInode.indirectAddress, indirectNodeBuffer);
+        // error reading indirect node block
+        if (res != 0) {
+          return -3;
+        }
+
+        INode indirectInode = INode::loadIndirNode(indirectNodeBuffer);
+
+        neededBlock = indirectInode.directPointers[neededBlock - 3];
+      }
+
+      res = myPM->readDiskBlock(neededBlock, activeBlock);
+      if (res != 0) {
+        return -3;
+      }
+    }
+
+    // read from blockbuffer to databuffer
+    data[i - activeFile.readWritePointer] = activeBlock[i % 64];
+    nextRwPointer = i;
+  }
+
+  // update rwpointer
+  int temp = activeFile.readWritePointer;
+  activeFile.readWritePointer = nextRwPointer;
+
+  // return
+  return activeFile.readWritePointer - temp;
 }
 
 /*

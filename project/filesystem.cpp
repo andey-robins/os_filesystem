@@ -216,15 +216,30 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
   //Address the case where the mode provided is invalid
   if (mode != 'r' && mode != 'w' && mode != 'm')
     return -2;
-  //Attempt to unlock the file with lockId and save the return value
-  int unlockResult = unlockFile(filename, fnameLen, lockId);
-  //Return -3 to signify locking problem if the file is locked and lockId does not match or if
-  //the file is not in the locked queue but lockId is not -1
-  if (unlockResult == -1) return -3;
-  else if (unlockResult == -2 && lockId != -1) return -3;
+  //Check if the file is currently locked. If the file is locked and the lockId does
+  //not match with its lockId, return -3 to indicate locking error
+  bool locked = true;
+  deque<int>::iterator it;
+  for (auto it = lockedFileQueue->begin(); it != lockedFileQueue->end(); it++)
+  {
+    DerivedLockedFile tmp = *it;
+    if (tmp.fileNameLength == fnameLen)
+    {
+      if (strcmp(filename, tmp.fileName) == 0)
+      {
+        if (lockId != tmp.lockId) return -3;
+        else
+        {
+          locked = true;
+          break;
+        } 
+      }
+    }
+  }
+  //Return -3 to indicate the file is not locked and lockId is not -1
+  if (!locked && lockId != -1) return -3;
   
   //Begin searching through the file existence queue to see if the file exists
-  deque<int>::iterator it;
   for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); it++)
   {
     DerivedFileExists tmp = *it;
@@ -265,29 +280,40 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 }
 int FileSystem::closeFile(int fileDesc)
 {
-  if (fileDesc < 1 || typeid(fileDesc) != typeid(int))
+  try
   {
-    //File descriptor is invalid.
-    return -1;
-  }
-  //Our file descriptor is valid, and we can begin iterating through our deque
-  //to find the structure related to the file that is currently open, and needs to be closed.
-  else if (fileDesc >= 1)
-  {
-    deque<int>::iterator it;
-    for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+  
+    if (fileDesc < 1 || typeid(fileDesc) != typeid(int))
     {
-      DerivedOpenFile temp = *it;
-      if (temp.fileDescription == fileDesc)
-      {
-        openFileQueue->erase(it);
-        return 0;
+      //File descriptor is invalid.
+      return -1;
+    }
+    //Our file descriptor is valid, and we can begin iterating through our deque
+    //to find the structure related to the file that is currently open, and needs to be closed.
+    else if (fileDesc >= 1)
+    {
+      deque<int>::iterator it;
+      for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+      { 
+        DerivedOpenFile temp = *it;
+
+        if (temp.fileDescription == fileDesc)
+        {
+          openFileQueue->erase(it);
+          return 0;
+        }
       }
     }
-  }
 
-  //Anything else happens, return -2
-  return -2;
+    //Can't find item in the queue, so it must not exist or the descriptor is not valid
+    // return -1
+    return -1;
+  }
+  //Anything else, return -2
+  catch(exception e)
+  {
+    return -2;
+  }
 }
 
 /*

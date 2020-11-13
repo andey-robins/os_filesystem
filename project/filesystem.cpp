@@ -87,7 +87,7 @@ int FileSystem::createFile(char *filename, int fnameLen)
   char fileInode[64];
   FNode fileNode = FNode::createFileNode(filename[fnameLen - 1], dataBlock);
   FNode::fileNodeToBuffer(fileNode, fileInode);
-
+ 
   // write iNode to disk
   int writeStatus = myPM->writeDiskBlock(nodeBlock, fileInode);
 
@@ -457,15 +457,18 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
   for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
   {
     DerivedOpenFile temp = *it;
-    if (temp.mode == 'w' && temp.fileDescription == fileDesc)
+    if ((temp.mode == 'w' || temp.mode == 'm') && temp.fileDescription == fileDesc)
     {
       //If the rwpointer is at zero, this means that we can start at the start of a block.
       //If it is not, we need to start at the pointer, and adjust from there
       int memBlocksRequired = ceil((len + temp.readWritePointer) / 64.0);
-      int startingBlock = ceil(temp.readWritePointer / 64.0);
-
+      int startingBlock = floor(temp.readWritePointer / 64.0);
+      //cout << "memory blocks required for " << temp.fileName <<" is" << memBlocksRequired << endl;
+      //cout << "The rwPointer is at " << temp.readWritePointer << endl;
+      //cout << "The starting block is " << startingBlock << endl;
       char fNodeBuff[64];
       int iNodeBlockPosition = findFileINode(temp);
+      //cout << "The fnode block position required for " << temp.fileName <<" is" << iNodeBlockPosition << endl;
 
       if (iNodeBlockPosition == -1)
       {
@@ -483,6 +486,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         size needed will need that one, or more.
       */
       int newSize = temp.readWritePointer + len;
+      //cout <<"The new size of this file is " << newSize << endl; 
 
       //We now need to count the current blocks, and determine if more are needed
       //in addition to updating addressing.
@@ -495,6 +499,12 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         //We have a problem counting and assigning blocks
         return -4;
       }
+
+      //Get updated FNode info
+      fNodeBuff[0] = {'0'};
+      myPM->readDiskBlock(iNodeBlockPosition, fNodeBuff);
+      fNodeObj = FNode::loadFileNode(fNodeBuff);
+      
       int location = temp.readWritePointer;
       int loopIndex = 0;
       char writeBuffer[64];
@@ -502,25 +512,25 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
       INode iNode;
       //BEGIN WRITING
       //If we are starting with indirect addressing based on the starting block position
-      if (startingBlock > 3)
+      if (startingBlock > 2)
       {
         char indirectAddressInfo[64];
         isIndirect = true;
         myPM->readDiskBlock(fNodeObj.indirectAddress, indirectAddressInfo);
         iNode = INode::loadIndirNode(indirectAddressInfo);
       }
-
+      myPM->readDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
       while (loopIndex != len)
       {
         writeBuffer[location%64] = data[loopIndex];
         location++;
         loopIndex++;
         //If we have reached the next block, or the last iteration of the loop
-        if (location % 64 == 0 || location == len)
+        if (location % 64 == 0 || loopIndex == len)
         {
           //Check again to see if we need to switch to indirect addressing
           //Use the && to make sure that this section is only executed once.
-          if (startingBlock > 3 && isIndirect == false)
+          if (startingBlock > 2 && isIndirect == false)
           {
             char indirectAddressInfo[64];
             isIndirect = true;
@@ -531,21 +541,28 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
           if (isIndirect == false)
           {
             //If we are here, we have reached the end of a direct block or about to exit loop
+            //cout << "Writing to disk now via direct addressing! " << endl;
+            //cout << "Writing to address " << fNodeObj.directAddress[startingBlock] << endl;
             myPM->writeDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
           }
 
           else if (isIndirect == true)
           {
             //If we are here, we have gone into indirect addressing or about to exit loop
+            //cout << "Writing to disk now via indirect addressing! " << endl;
+           //cout << "Writing to address " << iNode.directPointers[(startingBlock) - 3] << endl;
             myPM->writeDiskBlock(iNode.directPointers[(startingBlock) - 3], writeBuffer);
           }
           startingBlock++;
+          //cout << "We are now on block " << startingBlock <<endl;
         }
       }
       //Assign written, update file inode, and rwpointer location, write to disk, and return
       int written = loopIndex;
       fNodeObj.size = temp.readWritePointer + written;
       temp.readWritePointer = location;
+      openFileQueue->erase(it);
+      openFileQueue->push_back(temp);
       char outputBuffer[64];
       FNode::fileNodeToBuffer(fNodeObj, outputBuffer);
       myPM -> writeDiskBlock(iNodeBlockPosition, outputBuffer);
@@ -575,7 +592,7 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
   for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
   {
     DerivedOpenFile temp = *it;
-    if (temp.mode == 'w' && temp.fileDescription == fileDesc)
+    if ((temp.mode == 'w' || temp.mode == 'm') && temp.fileDescription == fileDesc)
     {
       char fNodeBuff[64];
       int iNodeBlockPosition = findFileINode(temp);
@@ -591,6 +608,10 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
       //To append, set the read/write pointer to the size of the file, and call write file 
       //with this new start block/location information.
       temp.readWritePointer = fNodeObj.size;
+      openFileQueue->erase(it);
+      openFileQueue->push_back(temp);
+      //cout << "In append, the new rwpoint pos is " << temp.readWritePointer << endl;
+      //cout << "In append, the name of file is " << temp.fileName << endl;
       return writeFile(fileDesc, data, len);
     }
   }
@@ -673,6 +694,7 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
   //immediately check if we have/need indirect address
   if (memBlocks > 3)
   {
+
     //If we are here, we know that we will have the max of three direct addresses filled.
     int success = assignIndirectAddress(fNode, memBlocks, inodeBlockPosition);
     if (success == -1)
@@ -704,7 +726,7 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
       {
         //Do I need to release a block via the PM as well?
         myPM->returnDiskBlock(fNode.directAddress[blocksInUse - 1]);
-        fNode.directAddress[blocksInUse] = 0;
+        fNode.directAddress[blocksInUse -1] = 0;
         blocksInUse--;
         diff = memBlocks - blocksInUse;
       }
@@ -759,9 +781,10 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
   }
   //Write direct addressing to disk.
   char outputBuffer[64];
-  FNode::fileNodeToBuffer(fNode, outputBuffer);
-  myPM->writeDiskBlock(iNodeBlockPosition, outputBuffer);
-
+  //FNode::fileNodeToBuffer(fNode, outputBuffer);
+  
+  //myPM->writeDiskBlock(iNodeBlockPosition, outputBuffer);
+  //cout << " I have written the new direct addressing " << endl;
   //This means that we have no indirect addressing set up yet.
   if (fNode.indirectAddress == 0)
   {
@@ -774,7 +797,12 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
       return -1;
     }
 
+    //Write new fNode information back to disk.
     fNode.indirectAddress = indirectBlock;
+    FNode::fileNodeToBuffer(fNode, outputBuffer);
+    //cout << "New file node is " << outputBuffer << endl; 
+    myPM->writeDiskBlock(iNodeBlockPosition, outputBuffer);
+
     INode indirNode = INode::createIndirNode();
 
     for (int i = 0; i < diff; i++)
@@ -787,12 +815,14 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
       }
       indirNode.directPointers[i] = directPointerValue;
     }
-
+  
     char indirNodeBuff[64];
     INode::indirNodeToBuffer(indirNode, indirNodeBuff);
 
     // write indirect node to disk
+    //cout << "The indir node will look like " << indirNodeBuff << endl;
     int writeStatus = myPM->writeDiskBlock(indirectBlock, indirNodeBuff);
+    return 0;
   }
 
   //We do have indirect addressing set up, and so we need to determine how many pointers
@@ -852,6 +882,7 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
       INode::indirNodeToBuffer(existingIndirectNode, outputBuffer);
       myPM->writeDiskBlock(fNode.indirectAddress, outputBuffer);
     }
+    return 0;
   }
-  return 0;
+  return -1;
 }

@@ -384,7 +384,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
     // check if we need new block
     if (i = activeFile.readWritePointer || i % 64 == 0) {
 
-      int neededBlock = floor(i / 64);
+      int neededBlock = floor(i / 64.0);
 
       // checks that our neededBlock won't be outside the max possible size
       // is this redundant due to the i < fileInode.size check for the forloop?

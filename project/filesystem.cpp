@@ -218,7 +218,7 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
     return -2;
   //Check if the file is currently locked. If the file is locked and the lockId does
   //not match with its lockId, return -3 to indicate locking error
-  bool locked = true;
+  bool locked = false;
   deque<int>::iterator it;
   for (auto it = lockedFileQueue->begin(); it != lockedFileQueue->end(); it++)
   {

@@ -391,13 +391,13 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
           if (isIndirect == false)
           {
             //If we are here, we have reached the end of a direct block or about to exit loop
-            myPM->writeDiskBlock(fNodeObj.directAddress[startingBlock - 1], writeBuffer);
+            myPM->writeDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
           }
 
           else if (isIndirect == true)
           {
             //If we are here, we have gone into indirect addressing or about to exit loop
-            myPM->writeDiskBlock(iNode.directPointers[(startingBlock - 1) - 3], writeBuffer);
+            myPM->writeDiskBlock(iNode.directPointers[(startingBlock) - 3], writeBuffer);
           }
           startingBlock++;
         }

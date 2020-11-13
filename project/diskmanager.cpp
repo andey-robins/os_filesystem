@@ -28,15 +28,15 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
   if (r == 1)
   {
     int partitionInProg = 0;
-    int bufferPosition = 0;
+    int bufferPosition = 1;
     diskP = dp;
-
+    buffer[0] = '|';
     while(partitionInProg < partCount)
     {
       //Insert partition name into buffer
       buffer[bufferPosition] = diskP[partitionInProg].partitionName;
       //Begin filling the buffer with partition information such as size, start, and end blocks.
-      fillPartitionInfo(buffer, diskP[partitionInProg].partitionSize, bufferPosition + 1);
+      fillPartitionInfo(buffer, diskP[partitionInProg].partitionSize, bufferPosition + 1, partitionInProg);
       //Use the global indexer to adjust buffer position
       bufferPosition = bufferIndexer; 
       partitionInProg++;
@@ -52,7 +52,7 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
     
     //Reset all critical shared variables.
     buffer[0]=0;
-    bufferIndexer = 0;
+    bufferIndexer = 1;
     blockCount = 0;
     rootOffset = 1;
   }
@@ -69,7 +69,6 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
     {
       //Assign the partition name
       diskP[partitionInProg].partitionName = buffer[bufferIndexer];
-      
       //Retrieve and assign the partition size.
       bufferIndexer++;
       int partSize = retrievePartitionInfo(buffer);
@@ -77,6 +76,7 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
       
       //Record starting block
       int startBlock = retrievePartitionInfo(buffer);
+      
       diskP[partitionInProg].startBlock = startBlock;
 
       //Record ending block
@@ -88,7 +88,7 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
 
     //Reset all critical shared variables.
     buffer[0] = 0;
-    bufferIndexer = 0;
+    bufferIndexer = 1;
   }
 }
 
@@ -133,6 +133,11 @@ int DiskManager::writeDiskBlock(char partitionname, int blknum, char *blkdata)
     if ((diskP[i].partitionName == partitionname) && (blknum <= diskP[i].endBlock - diskP[i].startBlock))
     {
       int absoluteDiskBlock = diskP[i].startBlock + blknum;
+      //cout << "disk P info is  " << diskP[i].partitionName << " With start block " << diskP[i].startBlock << endl;
+      //cout << "disk P info is  " << diskP[i].partitionName << " With end block " << diskP[i].endBlock << endl;
+      cout << "In DM WRTIE requested blknum was " << blknum << endl;
+      cout << "In DM WRITE at actual block " << absoluteDiskBlock << endl;
+      cout << "Writing the following buffer " << blkdata << endl;
       return myDisk->writeDiskBlock(absoluteDiskBlock, blkdata);
     }
   }
@@ -158,7 +163,7 @@ int DiskManager::getPartitionSize(char partitionname)
   return -1;
 }
 
-void DiskManager::fillPartitionInfo(char * buffer, int num, int pos)
+void DiskManager::fillPartitionInfo(char * buffer, int num, int pos, int diskPIndex)
 {
   
   //Use a private global variable to keep track of total blocks, 
@@ -186,7 +191,9 @@ void DiskManager::fillPartitionInfo(char * buffer, int num, int pos)
     for each partition.
   */
   string startBlock = to_string(rootOffset);
+  diskP[diskPIndex].startBlock = atoi(startBlock.c_str());
   string endBlock = to_string(blockCount);
+  diskP[diskPIndex].endBlock = atoi(endBlock.c_str());
 
   //Once the first partition has been written, we need to bump up the offset by one, but 
   //only once.
@@ -223,7 +230,7 @@ void DiskManager::fillPartitionInfo(char * buffer, int num, int pos)
 
 int DiskManager::retrievePartitionInfo(char * buffer)
 {
-  char temp[4];
+  char* temp[4];
   for (int i = 0; i < 5; i++)
   {
     
@@ -236,9 +243,9 @@ int DiskManager::retrievePartitionInfo(char * buffer)
       break;
     }
 
-    temp[i] = buffer[bufferIndexer];
+    temp[i] = &buffer[bufferIndexer];
     bufferIndexer++;
   }
 
-  return atoi(temp);
+  return atoi(*temp);
 }

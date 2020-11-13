@@ -382,7 +382,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
 
   for (int i = activeFile.readWritePointer; i < len + activeFile.readWritePointer && i < fileInode.size; i++) {
     // check if we need new block
-    if (i = activeFile.readWritePointer || i % 64 == 0) {
+    if (i == activeFile.readWritePointer || i % 64 == 0) {
 
       int neededBlock = floor(i / 64.0);
 

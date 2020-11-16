@@ -336,7 +336,7 @@ int main()
   r = c2->myFS->renameFile(const_cast<char *>("/o/o/o/a/a"), 10, const_cast<char *>("/o/o/o/a/z"), 10);
   cout << "rv from renameFile /o/o/o/a/a /o/o/o/a/z fs2 is " << r << (r==-2 ? " correct":" fail") <<endl;
   r = c5->myFS->renameFile(const_cast<char *>("/o/o/o/a"), 8, const_cast<char *>("/o/o/o/z"), 8);
-  cout << "rv from renameFile /o/o/o/a/a /o/o/o/a/z fs3 is " << r << (r==0 ? " correct":" fail") <<endl;
+  cout << "rv from renameFile /o/o/o/a /o/o/o/z fs3 is " << r << (r==0 ? " correct":" fail") <<endl;
   r = c3->myFS->renameFile(const_cast<char *>("/o/o/o/a"), 8, const_cast<char *>("/o/o/o/z"), 8);
   cout << "rv from renameFile /o/o/o/a /o/o/o/z fs3 is " << r << (r==0 ? " correct":" fail") <<endl;
   r = c3->myFS->createDirectory(const_cast<char *>("/o/o/o/z"), 8);

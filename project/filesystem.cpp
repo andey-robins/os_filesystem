@@ -518,8 +518,14 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         isIndirect = true;
         myPM->readDiskBlock(fNodeObj.indirectAddress, indirectAddressInfo);
         iNode = INode::loadIndirNode(indirectAddressInfo);
+        myPM->readDiskBlock(iNode.directPointers[startingBlock - 3], writeBuffer);
       }
-      myPM->readDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
+
+      else if (startingBlock <= 2)
+      {
+        myPM->readDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
+      }
+      
       while (loopIndex != len)
       {
         writeBuffer[location%64] = data[loopIndex];

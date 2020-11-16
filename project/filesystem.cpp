@@ -26,41 +26,19 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   openFileQueue = new deque<DerivedOpenFile>[1];
   fileExistsQueue = new deque<DerivedFileExists>[1];
   fileDescriptorGenerator.initShuffle();
+
+  //Create the root directory and write it to block 1 in the partition
+  DNode root = DNode::createDirNode('0', 0, '0');
+  char rootBuff[64];
+  DNode::dirNodeToBuffer(root, rootBuff);
+  myPM->writeDiskBlock(1, rootBuff);
 }
 int FileSystem::createFile(char *filename, int fnameLen)
 {
-
-  // validate filename
-  for (int i = 0; i < fnameLen; i++)
-  {
-    if (i % 2 == 0)
-    {
-      // should be /
-      if (filename[i] != '/')
-      {
-        return -3;
-      }
-    }
-    else
-    {
-      // should be alpha char
-      if (!isalpha(filename[i]))
-      {
-        return -3;
-      }
-    }
-  }
-
-  // file exists: return -1
-  deque<int>::iterator it;
-  for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); ++it)
-  {
-    DerivedFileExists temp = *it;
-    if (temp.fileName == filename)
-    {
-      return -1;
-    }
-  }
+  int existence = pathExists(filename, fnameLen);
+  //File already exists
+  if (existence > 0) return -1;
+  else if (existence == -3) return -3;
 
   // allocate the file blocks
   int nodeBlock = myPM->getFreeDiskBlock();
@@ -83,7 +61,6 @@ int FileSystem::createFile(char *filename, int fnameLen)
 
     return -2;
   }
-
   // create file iNode
   char fileInode[64];
   FNode fileNode = FNode::createFileNode(filename[fnameLen - 1], dataBlock);
@@ -97,7 +74,8 @@ int FileSystem::createFile(char *filename, int fnameLen)
   {
     return -4;
   }
-
+  //Everything has gone correctly, so store file's existence in its parent directory
+  cout << "Updating directory in block " << updateDirectory(filename, fnameLen, 'F', nodeBlock) << endl;
   // everything has gone correctly so store the file's existence
   fileExistsInstance.fileName = filename;
   fileExistsInstance.fileNameLength = fnameLen;
@@ -898,4 +876,123 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
     return 0;
   }
   return -1;
+}
+
+/*
+The pathExists function takes in the name of either a file or directory, which
+is also the path through the filesystem one expects to take to get to the file/directory.
+It starts at the root of the filesystem and uses the path to search downward until either the
+desired object is found or the search reaches a terminal point.
+
+It returns -1 if the file/directory cannot be found
+           -3 if the file/directory name is invalid
+           blockNum of the node if it is found
+*/
+int FileSystem::pathExists (char* path, int pathLen) 
+{
+  //If pathLen is 0, we are looking for the directory
+  if (pathLen == 0) return 1;
+  // validate filename
+  for (int i = 0; i < pathLen; i++)
+  {
+    if (i % 2 == 0)
+    {
+      // should be /
+      if (path[i] != '/')
+      {
+        return -3;
+      }
+    }
+    else
+    {
+      // should be alpha char
+      if (!isalpha(path[i]))
+      {
+        return -3;
+      }
+    }
+  }
+  //Start searching at root
+  bool nextCharFound;
+  char dirBuff[64];
+  myPM->readDiskBlock(1, dirBuff);
+  DNode currentDir = DNode::loadDirNode(dirBuff);
+
+  //Iterate through path name, increment by 2 to account for '/'
+  for (int i = 1; i < pathLen; i+=2)
+  {
+    nextCharFound = false;
+    char searchChar = path[i];
+    for (int j = 0; j < 10; j++)
+    {
+      FileEntry tmp = currentDir.entries[j];
+      if (tmp.name == searchChar)
+      {
+        nextCharFound = true;
+        //We are at the end of our search
+        if (i == (pathLen -1))
+        {
+          return tmp.subPointer;
+        }
+        //Move into next directory
+        if (tmp.type == 'D')
+        {
+          myPM->readDiskBlock(tmp.subPointer, dirBuff);
+          currentDir = DNode::loadDirNode(dirBuff);
+          break;
+        }
+        //Nonterminal path is file, means path invalid
+        else
+        {
+          return -3;
+        }
+      }
+    }
+    //Path invalid if next step not found and not at end of path
+    if (!nextCharFound && (i < pathLen - 1)) return -3;
+  }
+  //Path is valid, but file/directory does not exist yet
+  return -1;
+}
+
+/*
+Takes in a path that has been added to the system. Updates the directory that holds the
+added file or directory to reflect the addition. Assumes the calling function has already validated
+the path with pathExists.
+
+Returns directory node pointer if successful
+        -1 if the added file does not actually exist
+        -2 if out of disk space (and directory overflow)
+        -3 if path invalid
+*/
+int FileSystem::updateDirectory(char* path, int pathLen, char typeAdded, int nodeAdded)
+{
+  bool edited = false; //bool to keep track of whether directory has been edited
+  //Read block data
+  char buff1[64];
+    //Access and validate blocknum of parent directory
+  int parentNode = pathExists(path, pathLen - 2);
+  if (parentNode < 0) return parentNode;
+  //Load the parent directory info, edit, then rewrite
+  myPM->readDiskBlock(parentNode, buff1);
+  DNode parent = DNode::loadDirNode(buff1);
+  //We added a directory
+  myPM->readDiskBlock(nodeAdded, buff1);
+  
+  //Find a directory entry that hasn't been filled
+  for (int i = 0; i < 10; i++)
+  {
+    if (parent.entries[i].subPointer == 0)
+    {
+      parent.entries[i].subPointer = nodeAdded;
+      parent.entries[i].name = path[pathLen - 1];
+      parent.entries[i].type = typeAdded;
+      break;
+    }
+  }
+  //Rewrite modified directory to its original position
+  DNode::dirNodeToBuffer(parent, buff1);
+  myPM->writeDiskBlock(parentNode, buff1);
+  //Success, return pointer to directory modified
+  return parentNode;
 }

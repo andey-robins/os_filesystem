@@ -45,6 +45,8 @@ class FileSystem {
     int findFileINode(DerivedOpenFile exisitingOpenFile);
     int assignDirectAddress(FNode fNode, int memBlocks, int fileSize, int iNodeBlockPosition);
     int assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlockPosition);
+    int pathExists(char* path, int pathLen);
+    int updateDirectory(char* path, int pathLen, char typeAdded, int nodeAdded);
     /* declare other public members here */
 
 };

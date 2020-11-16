@@ -349,6 +349,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
       // file fulfills operation conditions
       operationPermitted = true;
       activeFile = temp;
+      openFileQueue->erase(it);
     }
   }
 
@@ -424,6 +425,8 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
   // update rwpointer
   int temp = activeFile.readWritePointer;
   activeFile.readWritePointer = nextRwPointer;
+  // push the updated file back to the openFileQueue to ensure our work in this method is reflected in the system's states
+  openFileQueue->push_back(activeFile);
 
   // return
   return activeFile.readWritePointer - temp;

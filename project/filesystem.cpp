@@ -11,6 +11,7 @@
 #include <typeinfo>
 #include <cmath>
 #include <cstring>
+#include <algorithm>
 using namespace std;
 
 FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
@@ -569,7 +570,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
       }
       //Assign written, update file inode, and rwpointer location, write to disk, and return
       int written = loopIndex;
-      fNodeObj.size = temp.readWritePointer + written;
+      fNodeObj.size = max(temp.readWritePointer + written, fNodeObj.size);
       temp.readWritePointer = location;
       openFileQueue->erase(it);
       openFileQueue->push_back(temp);

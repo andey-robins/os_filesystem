@@ -353,9 +353,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
       break;
     }
   }
-
-  cout << activeFile.fileName << endl;
-
+  
   // operation not permitted
   if (!operationPermitted) {
     return -3;

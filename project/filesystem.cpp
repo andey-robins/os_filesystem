@@ -345,10 +345,11 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
   DerivedOpenFile activeFile;
   for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it) {
     DerivedOpenFile temp = *it;
-    if (temp.mode == 'r' && temp.fileDescription == fileDesc) {
+    if ((temp.mode == 'r' || temp.mode == 'm') && temp.fileDescription == fileDesc) {
       // file fulfills operation conditions
       operationPermitted = true;
       activeFile = temp;
+      openFileQueue->erase(it);
     }
   }
 
@@ -424,6 +425,8 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
   // update rwpointer
   int temp = activeFile.readWritePointer;
   activeFile.readWritePointer = nextRwPointer;
+  // push the updated file back to the openFileQueue to ensure our work in this method is reflected in the system's states
+  openFileQueue->push_back(activeFile);
 
   // return
   return activeFile.readWritePointer - temp;
@@ -518,8 +521,14 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         isIndirect = true;
         myPM->readDiskBlock(fNodeObj.indirectAddress, indirectAddressInfo);
         iNode = INode::loadIndirNode(indirectAddressInfo);
+        myPM->readDiskBlock(iNode.directPointers[startingBlock - 3], writeBuffer);
       }
-      myPM->readDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
+
+      else if (startingBlock <= 2)
+      {
+        myPM->readDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
+      }
+      
       while (loopIndex != len)
       {
         writeBuffer[location%64] = data[loopIndex];

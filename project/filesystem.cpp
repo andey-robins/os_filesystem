@@ -652,11 +652,13 @@ int FileSystem::seekFile(int fileDesc, int offset, int flag)
       if (flag == 0) potential_rw += offset;
       else potential_rw = offset;
       //Check if the new read write pointer is valid based on the file size above
-      if (potential_rw > 0 && potential_rw < fileINode.size)
+      if (potential_rw >= 0 && potential_rw <= fileINode.size)
       {
         //Mutate the read/write pointer as desired and return 0 to mark success
         tmp.readWritePointer = potential_rw;
- 	return 0;
+        openFileQueue->erase(it);
+        openFileQueue->push_back(tmp);
+ 	      return 0;
       }
       //Do not modify the pointer and return -2 to indicate the offset and flag would have
       //resulted in a read_write pointer outside of the file bounds

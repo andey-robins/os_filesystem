@@ -350,8 +350,11 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
       operationPermitted = true;
       activeFile = temp;
       openFileQueue->erase(it);
+      break;
     }
   }
+
+  cout << activeFile.fileName << endl;
 
   // operation not permitted
   if (!operationPermitted) {
@@ -655,7 +658,7 @@ int FileSystem::seekFile(int fileDesc, int offset, int flag)
       {
         //Mutate the read/write pointer as desired and return 0 to mark success
         tmp.readWritePointer = potential_rw;
-        return 0;
+ 	return 0;
       }
       //Do not modify the pointer and return -2 to indicate the offset and flag would have
       //resulted in a read_write pointer outside of the file bounds

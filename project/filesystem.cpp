@@ -380,7 +380,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
   char activeBlock[64];
   int nextRwPointer = 0;
 
-  for (int i = activeFile.readWritePointer; i < len + activeFile.readWritePointer && i < fileInode.size; i++) {
+  for (int i = activeFile.readWritePointer; i < len + activeFile.readWritePointer + 1 && i < fileInode.size + 1; i++) {
     // check if we need new block
     if (i == activeFile.readWritePointer || i % 64 == 0) {
 

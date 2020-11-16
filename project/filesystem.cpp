@@ -345,7 +345,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
   DerivedOpenFile activeFile;
   for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it) {
     DerivedOpenFile temp = *it;
-    if (temp.mode == 'r' && temp.fileDescription == fileDesc) {
+    if ((temp.mode == 'r' || temp.mode == 'm') && temp.fileDescription == fileDesc) {
       // file fulfills operation conditions
       operationPermitted = true;
       activeFile = temp;

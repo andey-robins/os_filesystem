@@ -27,10 +27,15 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   fileDescriptorGenerator.initShuffle();
 
   //Create the root directory and write it to block 1 in the partition
-  DNode root = DNode::createDirNode('0', 0, '0');
+  //But only if it does not already exist
   char rootBuff[64];
-  DNode::dirNodeToBuffer(root, rootBuff);
-  myPM->writeDiskBlock(1, rootBuff);
+  myPM->readDiskBlock(1, rootBuff);
+  if (!isalpha(rootBuff[0]))
+  {
+    DNode root = DNode::createDirNode('0', 0, '0');
+    DNode::dirNodeToBuffer(root, rootBuff);
+    myPM->writeDiskBlock(1, rootBuff);
+  }
 }
 int FileSystem::createFile(char *filename, int fnameLen)
 {
@@ -166,8 +171,73 @@ int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
   //Return value for any other reason
   return -2;
 }
+/*
+Deletes the file with name filename unless it is locked or open
+Returns -1 if the file does not exist
+        -2 if the file is locked or open
+        -3 if the file cannot be deleted for any other reason
+        0 if the file is deleted successfully
+*/
 int FileSystem::deleteFile(char *filename, int fnameLen)
 {
+  int res;
+  if (openOrLocked(filename, fnameLen)) return -2;
+  //Get the block number of the desired file
+  int pathVal = pathExists(filename, fnameLen);
+  if (pathVal == -1) return -1;
+  else if (pathVal < 0) return -3;
+
+  //Load the desired block into FNode structure
+  char fBuffer[64];
+  myPM->readDiskBlock(pathVal, fBuffer);
+  FNode toDelete = FNode::loadFileNode(fBuffer);
+  for (int i = 0; i < 3; i++)
+  {
+    //Deallocates a direct address block if it has been used
+    if (toDelete.directAddress[i] != 0) 
+    {
+      res = myPM->returnDiskBlock(toDelete.directAddress[i]);
+      if (res == -1) return -3;
+    }
+    else break;
+  }
+  //Load in the indirect address and deallocate memory if used
+  if (toDelete.indirectAddress != 0)
+  {
+    myPM->readDiskBlock(toDelete.indirectAddress, fBuffer);
+    INode indirect = INode::loadIndirNode(fBuffer);
+    for (int i = 0; i < 16; i++)
+    {
+      if (indirect.directPointers[i] != 0)
+      {
+        res = myPM->returnDiskBlock(indirect.directPointers[i]);
+        if (res == -1) return -3;
+      }
+      else break;
+    }
+  }
+  //Remove the file from its parent node's entries
+  int parent = pathExists(filename, fnameLen - 2);
+  if (parent < 0) return -3;
+  myPM->readDiskBlock(parent, fBuffer);
+  DNode parentNode = DNode::loadDirNode(fBuffer);
+  for (int i = 0; i < 10; i++)
+  {
+    if (parentNode.entries[i].name == filename[fnameLen - 1])
+    {
+      parentNode.entries[i].name = '0';
+      parentNode.entries[i].subPointer = 0;
+      parentNode.entries[i].type = '0';
+      break;
+    }
+  }
+  //Write the parent node back to its original location
+  DNode::dirNodeToBuffer(parentNode, fBuffer);
+  myPM->writeDiskBlock(parent, fBuffer);
+  //Delete the block used by the file inode and restore bit vectors
+  res = myPM->returnDiskBlock(pathVal);
+  if (res == -1) return -3;
+  else return 0;
 }
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
@@ -612,8 +682,58 @@ int FileSystem::seekFile(int fileDesc, int offset, int flag)
   //The file was not found matching the descriptor given, so return -1
   return -1;
 }
+/* Renames a file from filename1 to filename2, can be used on a directory as well
+  Returns -1 if the filename is invalid
+          -2 if the filename does not exist
+          -3 if there is already a file with filename2
+          -4 if the file is open or locked
+          -5 for any other reason
+          0 if successful
+*/
 int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2)
 {
+  //Check if filename1 does't exist or is invalid or is open/locked
+  if (openOrLocked(filename1, fnameLen1)) return -4;
+  int pathRes = pathExists(filename1, fnameLen1);
+  if (pathRes == -1) return -2;
+  else if (pathRes == -3) return -1;
+  //Check if filename2 already exists or is invalid
+  int newPathRes = pathExists(filename2, fnameLen2);
+  if (newPathRes > 0) return -3;
+  else if (newPathRes == -3) return -1;
+  //Store the old and new values for the name character
+  char fileChar = filename1[fnameLen1 - 1];
+  char newFileChar = filename2[fnameLen2 - 1];
+  char fBuff[64];
+  myPM->readDiskBlock(pathRes, fBuff);
+  //Check if filename1 corresponded to a directory or a file
+  if (fBuff[0] == fileChar)
+  {
+    //Then we have a file
+    FNode original = FNode::loadFileNode(fBuff);
+    original.name = newFileChar;
+    FNode::fileNodeToBuffer(original, fBuff);
+    myPM->writeDiskBlock(pathRes, fBuff);
+  }
+  //Note: if we have a directory, there is no name field to change in the inode
+  //Now we have to also change the name in the parent directory
+  int parent = pathExists(filename1, fnameLen1 - 2);
+  if (parent < 0) return -5;
+  myPM->readDiskBlock(parent, fBuff);
+  DNode parentNode = DNode::loadDirNode(fBuff);
+  for (int i = 0; i < 16; i++)
+  {
+    //Update the value of the correct parent node entry
+    if (parentNode.entries[i].name == fileChar)
+    {
+      parentNode.entries[i].name = newFileChar;
+      break;
+    }
+  }
+  //Write the parent node back to the correct block
+  DNode::dirNodeToBuffer(parentNode, fBuff);
+  myPM->writeDiskBlock(parent, fBuff);
+  return 0;
 }
 int FileSystem::getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
 {
@@ -953,4 +1073,36 @@ int FileSystem::updateDirectory(char* path, int pathLen, char typeAdded, int nod
   myPM->writeDiskBlock(parentNode, buff1);
   //Success, return pointer to directory modified
   return parentNode;
+}
+
+/*
+Checks if the file named filename is in the open queue or locked queue
+Returns true if the file is in either queue
+        false if the file is not in either queue
+*/
+bool FileSystem::openOrLocked(char* filename, int fNameLen)
+{
+  for (auto it = lockedFileQueue->begin(); it != lockedFileQueue->end(); ++it)
+  {
+    DerivedLockedFile temp = *it;
+    if (temp.fileNameLength == fNameLen)
+    {
+      if (strcmp(temp.fileName, filename) == 0)
+      {
+        return -1;
+      }
+    }
+  }
+  for (auto it = openFileQueue->begin(); it != openFileQueue->end(); ++it)
+  {
+    DerivedOpenFile temp = *it;
+    if (temp.fileNameLength == fNameLen)
+    {
+      if (strcmp(temp.fileName, filename) == 0)
+      {
+        return -1;
+      }
+    }
+  }
+  return 0;
 }

@@ -44,6 +44,7 @@ class FileSystem {
     int assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlockPosition);
     int pathExists(char* path, int pathLen);
     int updateDirectory(char* path, int pathLen, char typeAdded, int nodeAdded);
+    bool openOrLocked(char* filename, int fNameLen);
     /* declare other public members here */
 
 };

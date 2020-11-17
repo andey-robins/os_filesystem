@@ -30,19 +30,21 @@ INode INode::loadIndirNode(char *nodebuffer)
     return inode;
 }
 
-void INode::indirNodeToBuffer(INode n, char* outBuff)
+void INode::indirNodeToBuffer(INode n, char *outBuff)
 {
     // direct addresses
     for (int i = 0; i < 16; i++)
     {
-        intToChar(outBuff, n.directPointers[i], 4*i);
+        intToChar(outBuff, n.directPointers[i], 4 * i);
     }
 }
 
-void INode::intToChar(char * buffer, int num, int pos) {
+void INode::intToChar(char *buffer, int num, int pos)
+{
     char four[5];
-    sprintf( four, "%.4d", num);
-    for (int i = 0; i < 4; i++) {
+    sprintf(four, "%.4d", num);
+    for (int i = 0; i < 4; i++)
+    {
         buffer[i + pos] = four[i];
     }
     return;

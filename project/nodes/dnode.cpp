@@ -50,23 +50,25 @@ DNode DNode::loadDirNode(char *nodeBuffer)
     return inode;
 }
 
-void DNode::dirNodeToBuffer(DNode d, char* outBuff)
+void DNode::dirNodeToBuffer(DNode d, char *outBuff)
 {
     for (int i = 0; i < 10; i++)
     {
         FileEntry temp = d.entries[i];
-        outBuff[6*i] = temp.name;
-        intToChar(outBuff, temp.subPointer, (6*i) + 1);
-        outBuff[(6*i) + 5] = temp.type;
+        outBuff[6 * i] = temp.name;
+        intToChar(outBuff, temp.subPointer, (6 * i) + 1);
+        outBuff[(6 * i) + 5] = temp.type;
     }
     intToChar(outBuff, d.nextDirectPointer, 60);
     return;
 }
 
-void DNode::intToChar(char * buffer, int num, int pos) {
+void DNode::intToChar(char *buffer, int num, int pos)
+{
     char four[5];
-    sprintf( four, "%.4d", num);
-    for (int i = 0; i < 4; i++) {
+    sprintf(four, "%.4d", num);
+    for (int i = 0; i < 4; i++)
+    {
         buffer[i + pos] = four[i];
     }
     return;

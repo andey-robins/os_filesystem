@@ -1,11 +1,11 @@
 #include "bitvector.h"
 
-class PartitionManager {
-  DiskManager *myDM;
-  BitVector *myBitVector;
+class PartitionManager
+{
+    DiskManager *myDM;
+    BitVector *myBitVector;
 
-
-  public:
+public:
     char myPartitionName;
     int myPartitionSize;
     PartitionManager(DiskManager *dm, char partitionname, int partitionsize);
@@ -16,4 +16,3 @@ class PartitionManager {
     int getFreeDiskBlock();
     int returnDiskBlock(int blknum);
 };
-

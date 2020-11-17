@@ -24,7 +24,6 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   //Should only need one deque for each file system. Need to get them allocated here.
   lockedFileQueue = new deque<DerivedLockedFile>[1];
   openFileQueue = new deque<DerivedOpenFile>[1];
-  fileExistsQueue = new deque<DerivedFileExists>[1];
   fileDescriptorGenerator.initShuffle();
 
   //Create the root directory and write it to block 1 in the partition
@@ -75,12 +74,7 @@ int FileSystem::createFile(char *filename, int fnameLen)
     return -4;
   }
   //Everything has gone correctly, so store file's existence in its parent directory
-  cout << "Updating directory in block " << updateDirectory(filename, fnameLen, 'F', nodeBlock) << endl;
-  // everything has gone correctly so store the file's existence
-  fileExistsInstance.fileName = filename;
-  fileExistsInstance.fileNameLength = fnameLen;
-  fileExistsInstance.iNodePosition = nodeBlock;
-  fileExistsQueue->push_back(fileExistsInstance);
+  updateDirectory(filename, fnameLen, 'F', nodeBlock);
   return 0;
 }
 int FileSystem::createDirectory(char *dirname, int dnameLen)
@@ -92,20 +86,8 @@ int FileSystem::lockFile(char *filename, int fnameLen)
   try
   {
     // file exists: no return -2
-    deque<int>::iterator itLock;
-    for (auto itLock = fileExistsQueue->begin(); itLock != fileExistsQueue->end(); ++itLock)
-    {
-      DerivedFileExists temp = *itLock;
-      if (temp.fileName == filename)
-      {
-        isFileExisting = true;
-      }
-    }
-
-    if (!isFileExisting)
-    {
-      return -2;
-    }
+    //May need to validate that the path is not to a dir
+    if (pathExists(filename, fnameLen) < 0) return -2;
 
     // file is unlocked: no return -1
     for (auto itLock = lockedFileQueue->begin(); itLock != lockedFileQueue->end(); ++itLock)
@@ -218,41 +200,24 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
   //Return -3 to indicate the file is not locked and lockId is not -1
   if (!locked && lockId != -1) return -3;
   
-  //Begin searching through the file existence queue to see if the file exists
-  for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); it++)
+  //Begin searching through the file system to see if the file exists
+  if (pathExists(filename, fnameLen) > 0)
   {
-    DerivedFileExists tmp = *it;
-    if (tmp.fileNameLength == fnameLen)
-    {
-      bool found = true;
-      for (int i = 0; i < fnameLen; i++)
-      {
-        if (filename[i] != tmp.fileName[i])
-        {
-          found = false;
-          break;
-        }
-      }
-      //We have found the correct file in our system, now we open it
-      if (found)
-      {
-        //Create the open file instance and add it to the open file queue
-        //We first have to generate a fileDescriptor integer and fill in
-        //the DerivedOpenFile fields of fileDescriptor, fileName, fileNameLength,
-        //readWritePointer, mode, and ?lockId.
-        DerivedOpenFile opened;
-        int fileDescriptor = fileDescriptorGenerator.getUniqueNumber();
-        opened.fileDescription = fileDescriptor;
-        opened.fileName = filename;
-        opened.fileNameLength = fnameLen;
-        opened.readWritePointer = 0;
-        opened.mode = mode;
-        opened.lockId = lockId;
-        openFileQueue->push_back(opened);
-        //Return the fileDescriptor to indicate a successful open
-        return fileDescriptor;
-      }
-    }
+    //Create the open file instance and add it to the open file queue
+    //We first have to generate a fileDescriptor integer and fill in
+    //the DerivedOpenFile fields of fileDescriptor, fileName, fileNameLength,
+    //readWritePointer, mode, and ?lockId.
+    DerivedOpenFile opened;
+    int fileDescriptor = fileDescriptorGenerator.getUniqueNumber();
+    opened.fileDescription = fileDescriptor;
+    opened.fileName = filename;
+    opened.fileNameLength = fnameLen;
+    opened.readWritePointer = 0;
+    opened.mode = mode;
+    opened.lockId = lockId;
+    openFileQueue->push_back(opened);
+    //Return the fileDescriptor to indicate a successful open
+    return fileDescriptor;
   }
   //Return -1 to signify that the file could not be found within the filesystem
   return -1;
@@ -659,16 +624,9 @@ int FileSystem::setAttribute(char *filename, int fnameLen /* ... and other param
 
 int FileSystem::findFileINode(DerivedOpenFile existingOpenFile)
 {
-  deque<int>::iterator it;
-  for (auto it = fileExistsQueue->begin(); it != fileExistsQueue->end(); ++it)
-  {
-    DerivedFileExists temp = *it;
-    if (temp.fileName == existingOpenFile.fileName)
-    {
-      return temp.iNodePosition;
-    }
-  }
-  return -1;
+  int inode = pathExists(existingOpenFile.fileName, existingOpenFile.fileNameLength);
+  if (inode > 0) return inode;
+  else return -1;
 }
 
 int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, int inodeBlockPosition)

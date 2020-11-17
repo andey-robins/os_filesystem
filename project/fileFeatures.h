@@ -30,14 +30,6 @@ class OpenFiles
         int lockId;
 };
 
-class FileExists
-{
-    public:
-        char* fileName;
-        int fileNameLength;
-        int iNodePosition;
-};
-
 
 class FileDescriptor
 {

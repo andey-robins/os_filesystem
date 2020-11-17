@@ -11,17 +11,14 @@ class FileSystem {
 
   struct DerivedLockedFile : LockedFiles{};
   struct DerivedOpenFile : OpenFiles{};
-  struct DerivedFileExists : FileExists{};
   struct DerivedFileDescriptor : FileDescriptor{};
 
   // what're these used for as class level variables? -andey
   DerivedFileDescriptor fileDescriptorGenerator;
   DerivedOpenFile openFileInstance;
   DerivedLockedFile lockedFileInstance;
-  DerivedFileExists fileExistsInstance;
   deque<DerivedLockedFile>* lockedFileQueue;
   deque<DerivedOpenFile>* openFileQueue;
-  deque<DerivedFileExists>* fileExistsQueue;
   
   /* declare other private members here */
  

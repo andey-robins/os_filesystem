@@ -26,6 +26,7 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
   else 
   {
     myBitVector->setBit(0); // set 0th bit to signal that the 0th sector is in use for the bitvector
+    myBitVector->setBit(1); // set 1st bit to signal that the 1st sector is in use for the root dir
   }
 
   // save the bitvector to the disk

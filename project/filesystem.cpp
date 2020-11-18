@@ -633,7 +633,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
             }
 
             //Get updated FNode info
-            fNodeBuff[0] = {'0'};
+            //fNodeBuff[0] = {'0'};
             myPM->readDiskBlock(iNodeBlockPosition, fNodeBuff);
             fNodeObj = FNode::loadFileNode(fNodeBuff);
 
@@ -649,8 +649,11 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
                 char indirectAddressInfo[64];
                 isIndirect = true;
                 myPM->readDiskBlock(fNodeObj.indirectAddress, indirectAddressInfo);
+                cout << "Indirect node is " << indirectAddressInfo << endl;
                 iNode = INode::loadIndirNode(indirectAddressInfo);
                 myPM->readDiskBlock(iNode.directPointers[startingBlock - 3], writeBuffer);
+                cout << "Starting block is " << startingBlock << endl;
+                cout << "Starting buffer look like " << iNode.directPointers[startingBlock - 3] << " with buffer " << writeBuffer << endl;
             }
 
             else if (startingBlock <= 2)
@@ -687,8 +690,8 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
                     else if (isIndirect == true)
                     {
                         //If we are here, we have gone into indirect addressing or about to exit loop
-                        //cout << "Writing to disk now via indirect addressing! " << endl;
-                        //cout << "Writing to address " << iNode.directPointers[(startingBlock) - 3] << endl;
+                        cout << "Writing to disk now via indirect addressing! " << endl;
+                        cout << "Writing to address " << iNode.directPointers[(startingBlock) - 3] << endl;
                         myPM->writeDiskBlock(iNode.directPointers[(startingBlock)-3], writeBuffer);
                     }
                     startingBlock++;
@@ -1061,9 +1064,9 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
             }
         }
         //Get difference while taking into account direct addressing
-
         diff = (memBlocks - 3) - existingPointers;
-
+        cout << "Our existing pointers are " << existingPointers <<endl;
+        cout << "Our diff is " << diff << endl;
         //If diff is zero, we are fine, but if it is positive or negative, we need to adjust.
         if (diff != 0)
         {
@@ -1083,7 +1086,7 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
             //The difference is positive, and so we need to add some indirect pointer values
             else if (diff > 0)
             {
-                while (diff != 0)
+                while (diff != -1)
                 {
                     existingIndirectNode.directPointers[existingPointers - 1] = myPM->getFreeDiskBlock();
                     if (existingIndirectNode.directPointers[existingPointers - 1] == -1)
@@ -1211,7 +1214,10 @@ int FileSystem::updateDirectory(char *path, int pathLen, char typeAdded, int nod
         return parentNode;
     //Load the parent directory info, edit, then rewrite
     myPM->readDiskBlock(parentNode, buff1);
+    //cout << "Root node loaded is " << buff1 << endl;
     DNode parent = DNode::loadDirNode(buff1);
+    cout << "The direct pointer is " << parent.nextDirectPointer << endl;
+    cout << "The last entry is " << parent.entries[9].subPointer << endl;
     //We added a directory
     myPM->readDiskBlock(nodeAdded, buff1);
 

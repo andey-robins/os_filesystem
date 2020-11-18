@@ -31,9 +31,9 @@ int main()
     Client *c2 = new Client(fs2);
     Client *c3 = new Client(fs3);
 
-    int i, r, l1, l2, f1, f2, f3, f4, f5;
-    char buf1[37], buf2[64], buf3[100], buf4[600], buf5[1200];
-    char rbuf1[37], rbuf2[64], rbuf3[100], rbuf4[600], rbuf5[1200];
+    int i, r, l1, l2, f1, f2, f3, f4;
+    char buf1[37], buf2[64], buf3[100], buf4[600];
+    char rbuf1[37], rbuf2[64], rbuf3[100], rbuf4[600];
 
     cout << "begin driver 2\n";
     cout << "rename test on fs1 (need driver1 first)\n";

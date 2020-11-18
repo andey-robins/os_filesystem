@@ -37,6 +37,7 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
         myPM->writeDiskBlock(1, rootBuff);
     }
 }
+
 int FileSystem::createFile(char *filename, int fnameLen)
 {
     int existence = pathExists(filename, fnameLen);
@@ -84,12 +85,14 @@ int FileSystem::createFile(char *filename, int fnameLen)
     updateDirectory(filename, fnameLen, 'F', nodeBlock);
     return 0;
 }
+
 int FileSystem::createDirectory(char *dirname, int dnameLen)
 {
+    return -100;
 }
+
 int FileSystem::lockFile(char *filename, int fnameLen)
 {
-    bool isFileExisting = false;
     try
     {
         // file exists: no return -2
@@ -127,12 +130,13 @@ int FileSystem::lockFile(char *filename, int fnameLen)
         // return lockId
         return lockedFileInstance.lockId;
     }
-    catch (exception e)
+    catch (exception &e)
     {
         // something unknown went wrong
         return -4;
     }
 }
+
 int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
 {
     //Create a boolean for whether the desired locked file has been found within the locked file queue
@@ -174,6 +178,7 @@ int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
     //Return value for any other reason
     return -2;
 }
+
 /*
 Deletes the file with name filename unless it is locked or open
 Returns -1 if the file does not exist
@@ -252,9 +257,12 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     else
         return 0;
 }
+
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
+    return -100;
 }
+
 int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 {
     //Address the case where the mode provided is invalid
@@ -307,6 +315,7 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
     //Return -1 to signify that the file could not be found within the filesystem
     return -1;
 }
+
 int FileSystem::closeFile(int fileDesc)
 {
     try
@@ -339,7 +348,7 @@ int FileSystem::closeFile(int fileDesc)
         return -1;
     }
     //Anything else, return -2
-    catch (exception e)
+    catch (exception &e)
     {
         return -2;
     }
@@ -670,6 +679,7 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
     }
     return -3;
 }
+
 int FileSystem::seekFile(int fileDesc, int offset, int flag)
 {
     //Negative offsets are invalid if the flag is nonzero, so we return -1
@@ -715,6 +725,7 @@ int FileSystem::seekFile(int fileDesc, int offset, int flag)
     //The file was not found matching the descriptor given, so return -1
     return -1;
 }
+
 /* Renames a file from filename1 to filename2, can be used on a directory as well
   Returns -1 if the filename is invalid
           -2 if the filename does not exist
@@ -774,11 +785,15 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
     myPM->writeDiskBlock(parent, fBuff);
     return 0;
 }
+
 int FileSystem::getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
 {
+    return -100;
 }
+
 int FileSystem::setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
 {
+    return -100;
 }
 
 int FileSystem::findFileINode(DerivedOpenFile existingOpenFile)
@@ -931,8 +946,10 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
 
         // write indirect node to disk
         //cout << "The indir node will look like " << indirNodeBuff << endl;
+        // TODO: properly handle a bad result in write Status;
+        // can we safely return writeStatus instead of 0? -andey
         int writeStatus = myPM->writeDiskBlock(indirectBlock, indirNodeBuff);
-        return 0;
+        return writeStatus;
     }
 
     //We do have indirect addressing set up, and so we need to determine how many pointers
@@ -1088,7 +1105,6 @@ Returns directory node pointer if successful
 */
 int FileSystem::updateDirectory(char *path, int pathLen, char typeAdded, int nodeAdded)
 {
-    bool edited = false; //bool to keep track of whether directory has been edited
     //Read block data
     char buff1[64];
     //Access and validate blocknum of parent directory

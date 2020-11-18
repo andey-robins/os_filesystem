@@ -29,7 +29,7 @@ int main()
     Client *c1 = new Client(fs1);
     int r, l1, l2, f1, f2, f3, f4, f5, i;
     char buf1[37], buf2[64], buf3[100], buf4[600];
-    char rbuf1[37], rbuf2[64], rbuf3[100], rbuf4[600];
+    char rbuf1[37], rbuf2[64], rbuf3[100];
 
     cout << "driver 1 basic file system tests on fs1\n";
     cout << "File create tests on fs1\n";

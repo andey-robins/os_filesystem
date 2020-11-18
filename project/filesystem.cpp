@@ -38,6 +38,14 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
     }
 }
 
+/*
+Creates a file whoise name is filename and the name has length fnameLen
+Returns -1 if the file already exists
+        -2 if there is not enough disk space
+        -3 if the filename is invalid
+        -4 if it fails for some other reason
+        0 if the file is created successfully
+*/
 int FileSystem::createFile(char *filename, int fnameLen)
 {
     int existence = pathExists(filename, fnameLen);
@@ -86,11 +94,28 @@ int FileSystem::createFile(char *filename, int fnameLen)
     return 0;
 }
 
+/*
+TODO: Implement this method -- currently returns -100 as major failure
+Creates a new directory whos name is dirname of length dnameLen
+Returns -1 if the directory already exists
+        -2 if there isn't enough disk space
+        -3 if the name is invalid
+        -4 if the directory cannot be created for any other reason
+        0 if the directory is created successfully
+*/
 int FileSystem::createDirectory(char *dirname, int dnameLen)
 {
     return -100;
 }
 
+/*
+Locks a file and returns a unique lockId to identify the locked file by
+Returns -1 if the file is already locked
+        -2 if the file doesn't exist
+        -3 if the file is currently opened
+        -4 if the file cannot be locked for any other reason
+        A positive, unique lockId if the file is locked successfully
+*/
 int FileSystem::lockFile(char *filename, int fnameLen)
 {
     try
@@ -137,6 +162,13 @@ int FileSystem::lockFile(char *filename, int fnameLen)
     }
 }
 
+/*
+Unlocks a file. the lockId is the unique lock associated with file filename that was associated
+with the file when it was locked
+Returns -1 if the lock is invalid
+        -2 for any other reason
+        0 if the file is unlocked successfully
+*/
 int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
 {
     //Create a boolean for whether the desired locked file has been found within the locked file queue
@@ -258,11 +290,27 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
         return 0;
 }
 
+/*
+TODO: Implement this method -- currently returns -100 for a major failure
+Deletes the directory dirname
+Returns -1 if the directory doesn't exist
+        -2 if the directory is not empty
+        -3 if the directory can't be deleted for any other reason
+        0 if the directory is deleted successfully
+*/
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
     return -100;
 }
 
+/*
+Opens a file filename in mode mode with a unique lock id of lockId
+Returns -1 if the file doesn't exist
+        -2 if the mode is invalid
+        -3 if the file can't be opened because locking restrictions
+        -4 if the file cannot be opened for any other reason
+        A unique, positive integer representing the file descriptor if successful        
+*/
 int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 {
     //Address the case where the mode provided is invalid
@@ -316,6 +364,12 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
     return -1;
 }
 
+/*
+Closes the file with file descriptor fileDesc
+Returns -1 if the file descriptor is invalid
+        -2 for any other reason
+        0 if the file is closed successfully
+*/
 int FileSystem::closeFile(int fileDesc)
 {
     try
@@ -360,7 +414,6 @@ int FileSystem::closeFile(int fileDesc)
   -2 if length is negative
   -3 if operation is not permitted
   returns the number of bytes read, if successful
-
 */
 int FileSystem::readFile(int fileDesc, char *data, int len)
 {
@@ -491,7 +544,6 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
   -2 if length is negative
   -3 if operation is not permitted
   The number of bytes written, if successful
-
 */
 int FileSystem::writeFile(int fileDesc, char *data, int len)
 {
@@ -634,6 +686,13 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
     return -3;
 }
 
+/*
+  Returns the following values based on the following conditions
+  -1 if file descriptor is invalid
+  -2 if length is negative
+  -3 if operation is not permitted
+  returns the number of bytes appended, if successful
+*/
 int FileSystem::appendFile(int fileDesc, char *data, int len)
 {
     //Unique nums generated will never be below 1, should also be an int
@@ -680,6 +739,13 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
     return -3;
 }
 
+/*
+Modifies the rwPointer for the file fileDesc by offset forward if flag is set to 0
+and otherwise offset forward from the beginning of the file
+Returns -1 if the file descriptor, offset, or flag is invalid
+        -2 if attempting to go outside the bounds of the file
+        0 if the seek operation goes successfully
+*/
 int FileSystem::seekFile(int fileDesc, int offset, int flag)
 {
     //Negative offsets are invalid if the flag is nonzero, so we return -1
@@ -786,11 +852,13 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
     return 0;
 }
 
+// TODO: Implement this method, define its actions -- returns -100 as a major failure for now
 int FileSystem::getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
 {
     return -100;
 }
 
+// TODO: Implement this method, define its actions -- returns -100 as a major failure for now
 int FileSystem::setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
 {
     return -100;

@@ -4,11 +4,11 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
-#include "disk.h"
-#include "diskmanager.h"
-#include "partitionmanager.h"
-#include "filesystem.h"
-#include "client.h"
+#include "../disk.h"
+#include "../diskmanager.h"
+#include "../partitionmanager.h"
+#include "../filesystem.h"
+#include "../client.h"
 using namespace std;
 
 int main()

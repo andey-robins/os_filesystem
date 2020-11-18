@@ -1,5 +1,6 @@
-class Client {
-  public:
+class Client
+{
+public:
     FileSystem *myFS;
-    Client(FileSystem *fs){myFS = fs;};
+    Client(FileSystem *fs) { myFS = fs; };
 };

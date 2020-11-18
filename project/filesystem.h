@@ -2,27 +2,33 @@
 #include "deque"
 #include "nodes/nodes.h"
 
+class FileSystem
+{
+    DiskManager *myDM;
+    PartitionManager *myPM;
+    char myfileSystemName;
+    int myfileSystemSize;
 
-class FileSystem {
-  DiskManager *myDM;
-  PartitionManager *myPM;
-  char myfileSystemName;
-  int myfileSystemSize;
+    struct DerivedLockedFile : LockedFiles
+    {
+    };
+    struct DerivedOpenFile : OpenFiles
+    {
+    };
+    struct DerivedFileDescriptor : FileDescriptor
+    {
+    };
 
-  struct DerivedLockedFile : LockedFiles{};
-  struct DerivedOpenFile : OpenFiles{};
-  struct DerivedFileDescriptor : FileDescriptor{};
+    // what're these used for as class level variables? -andey
+    DerivedFileDescriptor fileDescriptorGenerator;
+    DerivedOpenFile openFileInstance;
+    DerivedLockedFile lockedFileInstance;
+    deque<DerivedLockedFile> *lockedFileQueue;
+    deque<DerivedOpenFile> *openFileQueue;
 
-  // what're these used for as class level variables? -andey
-  DerivedFileDescriptor fileDescriptorGenerator;
-  DerivedOpenFile openFileInstance;
-  DerivedLockedFile lockedFileInstance;
-  deque<DerivedLockedFile>* lockedFileQueue;
-  deque<DerivedOpenFile>* openFileQueue;
-  
-  /* declare other private members here */
- 
-  public:
+    /* declare other private members here */
+
+public:
     FileSystem(DiskManager *dm, char fileSystemName);
     int createFile(char *filename, int fnameLen);
     int createDirectory(char *dirname, int dnameLen);
@@ -42,9 +48,8 @@ class FileSystem {
     int findFileINode(DerivedOpenFile exisitingOpenFile);
     int assignDirectAddress(FNode fNode, int memBlocks, int fileSize, int iNodeBlockPosition);
     int assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlockPosition);
-    int pathExists(char* path, int pathLen);
-    int updateDirectory(char* path, int pathLen, char typeAdded, int nodeAdded);
-    bool openOrLocked(char* filename, int fNameLen);
+    int pathExists(char *path, int pathLen);
+    int updateDirectory(char *path, int pathLen, char typeAdded, int nodeAdded);
+    bool openOrLocked(char *filename, int fNameLen);
     /* declare other public members here */
-
 };

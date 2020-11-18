@@ -20,8 +20,8 @@ public:
     // functions for interaction with the struct
     static DNode createDirNode(char name, int ptr, char type);
     static DNode loadDirNode(char *nodeBuffer);
-    static void dirNodeToBuffer(DNode d, char * outBuff);
-    static void intToChar(char * buffer, int num, int pos);
+    static void dirNodeToBuffer(DNode d, char *outBuff);
+    static void intToChar(char *buffer, int num, int pos);
 };
 
 #endif

@@ -1,0 +1,27 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    env:
+      working-directory: ./project
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: make
+      run: make
+      working-directory: ${{env.working-directory}}
+    - name: drTester
+      run: ./drTester
+      working-directory: ${{env.working-directory}}
+    - name: drTester2
+      run: ./drTester2
+      working-directory: ${{env.working-directory}}

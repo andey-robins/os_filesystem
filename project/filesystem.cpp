@@ -531,8 +531,12 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
                 }
 
                 INode indirectInode = INode::loadIndirNode(indirectNodeBuffer);
-
-                neededBlock = indirectInode.directPointers[neededBlock - 3];
+                
+                //Make sure we don't spill over direct pointers with off-by-one error.
+                if ((neededBlock - 3) < 16 )
+                {
+                    neededBlock = indirectInode.directPointers[neededBlock - 3];
+                }
             }
 
             res = myPM->readDiskBlock(neededBlock, activeBlock);
@@ -588,14 +592,9 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         {
             //If the rwpointer is at zero, this means that we can start at the start of a block.
             //If it is not, we need to start at the pointer, and adjust from there
-            int memBlocksRequired = ceil((len + temp.readWritePointer) / 64.0);
             int startingBlock = floor(temp.readWritePointer / 64.0);
-            //cout << "memory blocks required for " << temp.fileName <<" is" << memBlocksRequired << endl;
-            //cout << "The rwPointer is at " << temp.readWritePointer << endl;
-            //cout << "The starting block is " << startingBlock << endl;
             char fNodeBuff[64];
             int iNodeBlockPosition = findFileINode(temp);
-            //cout << "The fnode block position required for " << temp.fileName <<" is" << iNodeBlockPosition << endl;
 
             if (iNodeBlockPosition == -1)
             {
@@ -605,6 +604,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
             myPM->readDiskBlock(iNodeBlockPosition, fNodeBuff);
             //Must convert this buffer into an FNode object
             FNode fNodeObj = FNode::loadFileNode(fNodeBuff);
+            int memBlocksRequired = max(ceil((len + temp.readWritePointer)/64.0), ceil(fNodeObj.size/64.0));
 
             /*Now that we have an object to work with, we must parse the file bytes required for 
         writting, and get direct/indirect addressing set up. If the file bytes required are
@@ -615,10 +615,9 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
             int newSize = temp.readWritePointer + len;
             if ((ceil(newSize/64.0)) > 19)
             {
-              //file is too big
+              //File is too big, not in my house lol
               return -3;
             }
-            //cout <<"The new size of this file is " << newSize << endl;
 
             //We now need to count the current blocks, and determine if more are needed
             //in addition to updating addressing.
@@ -633,7 +632,6 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
             }
 
             //Get updated FNode info
-            //fNodeBuff[0] = {'0'};
             myPM->readDiskBlock(iNodeBlockPosition, fNodeBuff);
             fNodeObj = FNode::loadFileNode(fNodeBuff);
 
@@ -649,11 +647,8 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
                 char indirectAddressInfo[64];
                 isIndirect = true;
                 myPM->readDiskBlock(fNodeObj.indirectAddress, indirectAddressInfo);
-                cout << "Indirect node is " << indirectAddressInfo << endl;
                 iNode = INode::loadIndirNode(indirectAddressInfo);
                 myPM->readDiskBlock(iNode.directPointers[startingBlock - 3], writeBuffer);
-                cout << "Starting block is " << startingBlock << endl;
-                cout << "Starting buffer look like " << iNode.directPointers[startingBlock - 3] << " with buffer " << writeBuffer << endl;
             }
 
             else if (startingBlock <= 2)
@@ -663,39 +658,49 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
 
             while (loopIndex != len)
             {
+                //Check again to see if we need to switch to indirect addressing
+                //Use the && to make sure that this section is only executed once.
+                if (startingBlock > 2 && isIndirect == false)
+                {
+                    char indirectAddressInfo[64];
+                    isIndirect = true;
+                    myPM->readDiskBlock(fNodeObj.indirectAddress, indirectAddressInfo);
+                    iNode = INode::loadIndirNode(indirectAddressInfo);
+                    myPM->readDiskBlock(iNode.directPointers[(startingBlock)-3], writeBuffer);
+                }
                 writeBuffer[location % 64] = data[loopIndex];
                 location++;
                 loopIndex++;
                 //If we have reached the next block, or the last iteration of the loop
                 if (location % 64 == 0 || loopIndex == len)
                 {
-                    //Check again to see if we need to switch to indirect addressing
-                    //Use the && to make sure that this section is only executed once.
-                    if (startingBlock > 2 && isIndirect == false)
-                    {
-                        char indirectAddressInfo[64];
-                        isIndirect = true;
-                        myPM->readDiskBlock(fNodeObj.indirectAddress, indirectAddressInfo);
-                        iNode = INode::loadIndirNode(indirectAddressInfo);
-                    }
+                    
                     //192 bytes is the limit of our three direct addresses
                     if (isIndirect == false)
                     {
                         //If we are here, we have reached the end of a direct block or about to exit loop
-                        //cout << "Writing to disk now via direct addressing! " << endl;
-                        //cout << "Writing to address " << fNodeObj.directAddress[startingBlock] << endl;
                         myPM->writeDiskBlock(fNodeObj.directAddress[startingBlock], writeBuffer);
+                        if (loopIndex != len)
+                        {
+                            //Make sure we don't accidentally read in the indirect node, otherwise, read whats next
+                            if (startingBlock < 2 )
+                            {
+                                myPM->readDiskBlock(fNodeObj.directAddress[startingBlock+1], writeBuffer);
+                            } 
+                          
+                        }
                     }
 
                     else if (isIndirect == true)
                     {
                         //If we are here, we have gone into indirect addressing or about to exit loop
-                        cout << "Writing to disk now via indirect addressing! " << endl;
-                        cout << "Writing to address " << iNode.directPointers[(startingBlock) - 3] << endl;
                         myPM->writeDiskBlock(iNode.directPointers[(startingBlock)-3], writeBuffer);
+                        if (loopIndex != len)
+                        {
+                          myPM->readDiskBlock(iNode.directPointers[(startingBlock - 3)+1], writeBuffer); 
+                        }
                     }
                     startingBlock++;
-                    //cout << "We are now on block " << startingBlock <<endl;
                 }
             }
             //Assign written, update file inode, and rwpointer location, write to disk, and return
@@ -758,8 +763,6 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
             temp.readWritePointer = fNodeObj.size;
             openFileQueue->erase(it);
             openFileQueue->push_back(temp);
-            //cout << "In append, the new rwpoint pos is " << temp.readWritePointer << endl;
-            //cout << "In append, the name of file is " << temp.fileName << endl;
             return writeFile(fileDesc, data, len);
         }
     }
@@ -1004,7 +1007,6 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
     //FNode::fileNodeToBuffer(fNode, outputBuffer);
 
     //myPM->writeDiskBlock(iNodeBlockPosition, outputBuffer);
-    //cout << " I have written the new direct addressing " << endl;
     //This means that we have no indirect addressing set up yet.
     if (fNode.indirectAddress == 0)
     {
@@ -1020,7 +1022,6 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
         //Write new fNode information back to disk.
         fNode.indirectAddress = indirectBlock;
         FNode::fileNodeToBuffer(fNode, outputBuffer);
-        //cout << "New file node is " << outputBuffer << endl;
         myPM->writeDiskBlock(iNodeBlockPosition, outputBuffer);
 
         INode indirNode = INode::createIndirNode();
@@ -1040,7 +1041,6 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
         INode::indirNodeToBuffer(indirNode, indirNodeBuff);
 
         // write indirect node to disk
-        //cout << "The indir node will look like " << indirNodeBuff << endl;
         // TODO: properly handle a bad result in write Status;
         // can we safely return writeStatus instead of 0? -andey
         int writeStatus = myPM->writeDiskBlock(indirectBlock, indirNodeBuff);
@@ -1065,8 +1065,6 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
         }
         //Get difference while taking into account direct addressing
         diff = (memBlocks - 3) - existingPointers;
-        cout << "Our existing pointers are " << existingPointers <<endl;
-        cout << "Our diff is " << diff << endl;
         //If diff is zero, we are fine, but if it is positive or negative, we need to adjust.
         if (diff != 0)
         {
@@ -1076,8 +1074,8 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
                 while (diff != 0)
                 {
                     //Do I need to release a block via the PM as well?
-                    myPM->returnDiskBlock(existingIndirectNode.directPointers[existingPointers - 1]);
-                    existingIndirectNode.directPointers[existingPointers - 1] = 0;
+                    myPM->returnDiskBlock(existingIndirectNode.directPointers[existingPointers]);
+                    existingIndirectNode.directPointers[existingPointers] = 0;
                     existingPointers--;
                     diff = (memBlocks - 3) - existingPointers;
                 }
@@ -1086,13 +1084,13 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
             //The difference is positive, and so we need to add some indirect pointer values
             else if (diff > 0)
             {
-                while (diff != -1)
+                while (diff != 0)
                 {
-                    existingIndirectNode.directPointers[existingPointers - 1] = myPM->getFreeDiskBlock();
-                    if (existingIndirectNode.directPointers[existingPointers - 1] == -1)
+                    existingIndirectNode.directPointers[existingPointers] = myPM->getFreeDiskBlock();
+                    if (existingIndirectNode.directPointers[existingPointers] == -1)
                     {
                         //Did we run out of space?
-                        existingIndirectNode.directPointers[existingPointers - 1] = 0;
+                        existingIndirectNode.directPointers[existingPointers ] = 0;
                         return -1;
                     }
                     existingPointers++;
@@ -1214,10 +1212,7 @@ int FileSystem::updateDirectory(char *path, int pathLen, char typeAdded, int nod
         return parentNode;
     //Load the parent directory info, edit, then rewrite
     myPM->readDiskBlock(parentNode, buff1);
-    //cout << "Root node loaded is " << buff1 << endl;
     DNode parent = DNode::loadDirNode(buff1);
-    cout << "The direct pointer is " << parent.nextDirectPointer << endl;
-    cout << "The last entry is " << parent.entries[9].subPointer << endl;
     //We added a directory
     myPM->readDiskBlock(nodeAdded, buff1);
 

@@ -44,6 +44,7 @@ PartitionManager::~PartitionManager()
  */
 int PartitionManager::getFreeDiskBlock()
 {
+    char buffer[64];
     /* write the code for allocating a partition block */
     // this should be able to stat at two since block 0 is partition info and block 1 is the root dir?
     for (int i = 0; i < 64; i++)
@@ -51,6 +52,8 @@ int PartitionManager::getFreeDiskBlock()
         if (myBitVector->testBit(i) == OFF)
         {
             myBitVector->setBit(i);
+            myBitVector->getBitVector((unsigned int *) buffer);
+            writeDiskBlock(0, buffer);
             return i;
         }
     }

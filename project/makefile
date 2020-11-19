@@ -2,7 +2,7 @@ CC=g++
 #CFLAGS = -ggdb 
 CFLAGS = -Wall -ggdb
 
-all: drTester drTester2
+all: drTester drTester2 drTester3
 
 #
 # FILE SYSTEM
@@ -45,8 +45,15 @@ drTester: drivers/driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.
 
 drTester2: drivers/driver2.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 	$(CC) $(CFLAGS) -o drTester2 drivers/driver2.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+
+drTester3: drivers/driver3.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o drTester3 drivers/driver3.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+
 #
 # CLEAN
 #
 clean:
-	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 drTester drTester2
+	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 drTester drTester2 drTester3
+
+run:
+	./drTester ./drTester2 ./drTester3

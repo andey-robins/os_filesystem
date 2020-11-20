@@ -1032,7 +1032,7 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
     //use right now.
     //If new filesize only requires one block, return as this is already prepared for us
 
-    if (ceil(fileSize / 64.0) == 1)
+    if ((ceil(fileSize / 64.0) == 1) && fNode.directAddress[1] == 0)
     {
         return 0;
     }
@@ -1070,8 +1070,8 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
             while (diff != 0)
             {
                 //Do I need to release a block via the PM as well?
-                myPM->returnDiskBlock(fNode.directAddress[blocksInUse - 1]);
-                fNode.directAddress[blocksInUse - 1] = 0;
+                myPM->returnDiskBlock(fNode.directAddress[blocksInUse]);
+                fNode.directAddress[blocksInUse] = 0;
                 blocksInUse--;
                 diff = memBlocks - blocksInUse;
             }
@@ -1082,11 +1082,11 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
         {
             while (diff != 0)
             {
-                fNode.directAddress[blocksInUse - 1] = myPM->getFreeDiskBlock();
-                if (fNode.directAddress[blocksInUse - 1] == -1)
+                fNode.directAddress[blocksInUse] = myPM->getFreeDiskBlock();
+                if (fNode.directAddress[blocksInUse] == -1)
                 {
                     //Did we run out of space?
-                    fNode.directAddress[blocksInUse - 1] = 0;
+                    fNode.directAddress[blocksInUse] = 0;
                     return -1;
                 }
                 blocksInUse++;

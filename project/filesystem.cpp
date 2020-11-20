@@ -60,7 +60,14 @@ int FileSystem::createFile(char *filename, int fnameLen)
         else return -4;
     }
     else if (existence == -3)
+    {
+        cout << "Doesn't exist! Check path exists!" << endl;
         return -3;
+    }
+    else if (existence == -4)
+    {
+        return -4;
+    }
 
     // allocate the file blocks
     int nodeBlock = myPM->getFreeDiskBlock();
@@ -119,9 +126,20 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
         char buffer1[64];
         myPM->readDiskBlock(pathVal, buffer1);
         //Return -4 if the existing name is a file
-        if (isalpha(buffer1[1])) return -4;
+        if (isalpha(buffer1[1]))
+        {
+            cout << "Existing name is a file " << endl;
+            cout << buffer1[1] <<endl;
+            cout << "Full buffer is " << buffer1 <<endl;
+            return -4;
+        }
         //Otherwise it is already a directory
-        else return -1;
+        else
+        {
+            cout << "Already a dir " << endl;
+            cout << buffer1 << endl;
+            return -1;
+        }
     }
     //The name is invalid
     else if (pathVal == -3)
@@ -139,10 +157,16 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
     DNode newDir = DNode::createDirNode('0', 0, '0');
     DNode::dirNodeToBuffer(newDir, newDirBuff);
     if (myPM->writeDiskBlock(nodeBlock, newDirBuff) != 0)
+    {
+        cout <<"Could not write newly created dir" << endl;
         return -4;
+    }
     //Update the parent directory to reflect the addition
     if (updateDirectory(dirname, dnameLen, 'D', nodeBlock) < 0)
+    {
+        cout << "Could not update parent directory" << endl;
         return -4;
+    }
     //If it makes it this far, we have succeeded at creating the directory
     return 0;
 }
@@ -1296,6 +1320,7 @@ int FileSystem::pathExists(char *path, int pathLen)
                 //Nonterminal path is file, means path invalid
                 else
                 {
+                    cout << "Our path is non-terminal/invalid" << endl;
                     return -3;
                 }
             }
@@ -1308,7 +1333,27 @@ int FileSystem::pathExists(char *path, int pathLen)
         }
         //Path invalid if next step not found and not at end of path
         if (!nextCharFound && (i < pathLen - 1))
+        {
+            char rootBuff[64];
+            myPM->readDiskBlock(1, rootBuff);
+            DNode rootDir = DNode::loadDirNode(rootBuff);
+
+            if (rootDir.entries[0].name != path[1])
+            {
+                //root dir not found or valid
+                cout << "Iterator is at " << i << endl;
+                cout << "Path len is " << pathLen << endl;
+                cout << "The check len is " << pathLen-1 <<endl;
+                cout << "Next step not found, path invalid" << endl;
+                cout << "returning -4" << endl;
+                return -4;
+            }
+            cout << "Iterator is at " << i << endl;
+            cout << "Path len is " << pathLen << endl;
+            cout << "The check len is " << pathLen-1 <<endl;
+            cout << "Next step not found, path invalid" << endl;
             return -3;
+        }
     }
     //Path is valid, but file/directory does not exist yet
     return -1;

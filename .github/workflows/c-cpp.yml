@@ -19,9 +19,21 @@ jobs:
     - name: make
       run: make
       working-directory: ${{env.working-directory}}
-    - name: drTester
-      run: ./drTester
+    - name: drTester1
+      run: ./drTester1
       working-directory: ${{env.working-directory}}
     - name: drTester2
       run: ./drTester2
+      working-directory: ${{env.working-directory}}
+    - name: drTester3
+      run: ./drTester3
+      working-directory: ${{env.working-directory}}
+    - name: drTester4
+      run: ./drTester4
+      working-directory: ${{env.working-directory}}
+    - name: drTester5
+      run: ./drTester5
+      working-directory: ${{env.working-directory}}
+    - name: drTester6
+      run: ./drTester6
       working-directory: ${{env.working-directory}}

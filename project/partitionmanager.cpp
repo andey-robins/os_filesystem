@@ -66,9 +66,12 @@ int PartitionManager::getFreeDiskBlock()
  */
 int PartitionManager::returnDiskBlock(int blknum)
 {
+    char buffer[64];
     /* write the code for deallocating a partition block */
     // reset block's bitvector to free it
     myBitVector->resetBit(blknum);
+    myBitVector->getBitVector((unsigned int *) buffer);
+    writeDiskBlock(0, buffer);
 
     // overwrite the deallocated block with cs
     char overwriteBuffer[64];

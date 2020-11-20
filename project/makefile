@@ -61,5 +61,7 @@ drTester6: drivers/driver6.cpp bitvector.o disk.o diskmanager.o partitionmanager
 #
 # CLEAN
 #
+run:
+	./drTester ./drTester2 ./drTester3
 clean:
 	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 drTester drTester1 drTester2 drTester3 drTester4 drTester5 drTester6

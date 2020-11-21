@@ -25,21 +25,13 @@ int main()
     dp[2].partitionSize = 105;
 
     DiskManager *dm = new DiskManager(d, 3, dp);
-    FileSystem *fs1 = new FileSystem(dm, 'A');
+    FileSystem *fs1 = new FileSystem(dm, 'A');  // this throws a warning because it's never used, but i'm leaving it in so that the disk creates the FS
     FileSystem *fs2 = new FileSystem(dm, 'B');
-    FileSystem *fs3 = new FileSystem(dm, 'C');
-    Client *c1 = new Client(fs1);
+    FileSystem *fs3 = new FileSystem(dm, 'C');  // this throws a warning because it's never used, but i'm leaving it in so that the disk creates the FS
     Client *c2 = new Client(fs2);
-    Client *c3 = new Client(fs3);
-    Client *c4 = new Client(fs1);
-    Client *c5 = new Client(fs2);
+    int i, r, f1;
+    char buf2[64], buf3[600], buf4[600];
 
-    int i, r, l1, l2, f1, f2, f3, f4, f5, f6;
-    char buf1[37], buf2[64], buf3[600], buf4[600];
-    char rbuf1[37], rbuf2[64], rbuf3[600], rbuf4[600];
-
-    for (i = 0; i < 37; i++)
-        buf1[i] = 'P';
     for (i = 0; i < 64; i++)
         buf2[i] = 'T';
     for (i = 0; i < 600; i++)

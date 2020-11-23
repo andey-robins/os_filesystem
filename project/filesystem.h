@@ -53,6 +53,7 @@ public:
 
     bool validateFilename(char *fname, int fnameLen);
     int findFile(char* fname, int fnameLen);
+    int findDirectory(char* dname, int dnameLen);
 
     int pathExists(char *path, int pathLen);
     int updateDirectory(char *path, int pathLen, char typeAdded, int nodeAdded);

@@ -408,17 +408,27 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
     //Find the block number of the directory to be deleted
     int existence = findDirectory(dirname, dnameLen);
-    cout << "Return value from findDirectory in deleteDirectory  is " << existence << endl;
+    cout << "Return value from findDirectory in deleteDirectory  is " << existence << endl; // currently gets 20, which loads the storage of /g/a and has a listing for /g/a/g
     if (existence < 0)
         return -1;
 
-    //Check if the path found actually leads to a file
     char buffer[64];
     myPM->readDiskBlock(existence, buffer);
     DNode foundDirectory = DNode::loadDirNode(buffer);
+
+    //Check if the path found actually leads to a file
     for (int i = 0; i < 10; i++) {
         if (foundDirectory.entries[i].name == dirname[dnameLen - 1] && foundDirectory.entries[i].type == 'F') {
             return -1;
+        }
+    }
+
+    // load the DNode for the directory in question
+    for (int i = 0; i < 10; i++) {
+        if (foundDirectory.entries[i].name == dirname[dnameLen - 1]){
+            existence = foundDirectory.entries[i].subPointer;
+            myPM->readDiskBlock(existence, buffer);
+            foundDirectory = DNode::loadDirNode(buffer);
         }
     }
 
@@ -484,6 +494,18 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 
     myPM->readDiskBlock(parent, buffer);
     DNode parentNode = DNode::loadDirNode(buffer);
+
+    // load the DNode for the parent directory in question
+    for (int i = 0; i < 10; i++) {
+        if (parentNode.entries[i].name == dirname[dnameLen - 3]) {
+            // move down into the directory's DNode
+            parent = parentNode.entries[i].subPointer;
+            myPM->readDiskBlock(parent, buffer);
+            parentNode = DNode::loadDirNode(buffer);
+            break;
+        }
+    }
+
     for (int i = 0; i < 10; i++)
     {
         //If the new entry has been found in parent directory
@@ -500,6 +522,7 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
         }
     }
     // some other failure happened! uh oh!
+    cout << "We go through the whole thing and there's an issue" << endl;
     return -3;
 }
 

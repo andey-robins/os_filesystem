@@ -187,12 +187,12 @@ int FileSystem::lockFile(char *filename, int fnameLen)
     {
         // file exists: no return -2
         //May need to validate that the path is not to a dir
-        int pathVal = pathExists(filename, fnameLen);
-        if (pathVal < 0)
+        int existence = findFile(filename, fnameLen);
+        if (existence < 0)
             return -2;
         //Check if the path given actually leads to a directory
         char buffer[64];
-        myPM->readDiskBlock(pathVal, buffer);
+        myPM->readDiskBlock(existence, buffer);
         if (!isalpha(buffer[1])) return -4;
         // file is unlocked: no return -1
         for (auto itLock = lockedFileQueue->begin(); itLock != lockedFileQueue->end(); ++itLock)
@@ -294,15 +294,15 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     if (openOrLocked(filename, fnameLen))
         return -2;
     //Get the block number of the desired file
-    int pathVal = pathExists(filename, fnameLen);
-    if (pathVal == -1)
+    int existence = findFile(filename, fnameLen);
+    if (existence == -1)
         return -1;
-    else if (pathVal < 0)
+    else if (existence < 0)
         return -3;
 
     //Load the desired block into FNode structure
     char fBuffer[64];
-    myPM->readDiskBlock(pathVal, fBuffer);
+    myPM->readDiskBlock(existence, fBuffer);
     //Return an error if the file loaded in is actually a directory
     if (!isalpha(fBuffer[1])) return -3;
     FNode toDelete = FNode::loadFileNode(fBuffer);
@@ -373,7 +373,7 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
       myPM->writeDiskBlock(parent, fBuffer);
     }
     //Delete the block used by the file inode and restore bit vectors
-    res = myPM->returnDiskBlock(pathVal);
+    res = myPM->returnDiskBlock(existence);
     if (res == -1)
         return -3;
     else
@@ -501,11 +501,11 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
         return -3;
 
     //Begin searching through the file system to see if the file exists
-    int pathVal = pathExists(filename, fnameLen);
-    if (pathVal > 0)
+    int existence = findFile(filename, fnameLen);
+    if (existence > 0)
     {
         char buffer1[64];
-        myPM->readDiskBlock(pathVal, buffer1);
+        myPM->readDiskBlock(existence, buffer1);
         //Return -4 if the existing name is a directory
         if (!isalpha(buffer1[1])) return -1;
         
@@ -983,22 +983,22 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
     //Check if filename1 does't exist or is invalid or is open/locked
     if (openOrLocked(filename1, fnameLen1))
         return -4;
-    int pathRes = pathExists(filename1, fnameLen1);
-    if (pathRes == -1)
+    int existenceOld = findFile(filename1, fnameLen1);
+    if (existenceOld == -1)
         return -2;
-    else if (pathRes == -3)
+    else if (existenceOld == -3)
         return -1;
     //Check if filename2 already exists or is invalid
-    int newPathRes = pathExists(filename2, fnameLen2);
-    if (newPathRes > 0)
+    int existenceNew = findFile(filename2, fnameLen2);
+    if (existenceNew > 0)
         return -3;
-    else if (newPathRes == -3)
+    else if (existenceNew == -3)
         return -1;
     //Store the old and new values for the name character
     char fileChar = filename1[fnameLen1 - 1];
     char newFileChar = filename2[fnameLen2 - 1];
     char fBuff[64];
-    myPM->readDiskBlock(pathRes, fBuff);
+    myPM->readDiskBlock(existenceOld, fBuff);
     //Check if filename1 corresponded to a directory or a file
     if (fBuff[0] == fileChar)
     {
@@ -1006,7 +1006,7 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
         FNode original = FNode::loadFileNode(fBuff);
         original.name = newFileChar;
         FNode::fileNodeToBuffer(original, fBuff);
-        myPM->writeDiskBlock(pathRes, fBuff);
+        myPM->writeDiskBlock(existenceOld, fBuff);
     }
     //Note: if we have a directory, there is no name field to change in the inode
     //Now we have to also change the name in the parent directory
@@ -1044,7 +1044,7 @@ int FileSystem::setAttribute(char *filename, int fnameLen /* ... and other param
 
 int FileSystem::findFileINode(DerivedOpenFile existingOpenFile)
 {
-    int inode = pathExists(existingOpenFile.fileName, existingOpenFile.fileNameLength);
+    int inode = findFile(existingOpenFile.fileName, existingOpenFile.fileNameLength);
     if (inode > 0)
         return inode;
     else

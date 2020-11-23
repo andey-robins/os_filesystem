@@ -1298,22 +1298,21 @@ int FileSystem::findFile(char* fname, int fnameLen) {
 
     // begin traversal of the file path to find the file
     char workingBuffer[64];
-    myPM->readDiskBlock(1, workingBuffer); // load the root dir
-    DNode workingDirectory = DNode::loadDirNode(workingBuffer);
-    int nextBlock = 1;
+    int nextBlock = 1; // set to 0 so we load the root directory first
 
     // iterate over the filename to sequentially access the name of each file we're looking for
     for (int i = 1; i < fnameLen; i += 2) {
-        cout << "Looking for: " << fname[i] << endl;
+
+        myPM->readDiskBlock(nextBlock, workingBuffer);
+        DNode workingDirectory = DNode::loadDirNode(workingBuffer);
+        
         // go through every file entry
         for (int j = 0; j < 10; j++) {
 
             // check each file entry to see if it is the one we're looking for
             if (workingDirectory.entries[j].name == fname[i]) {
-                // found our next entry, so load it and step back
+                // found our next entry, so store that block and continue our traversal
                 nextBlock = workingDirectory.entries[j].subPointer;
-                myPM->readDiskBlock(nextBlock, workingBuffer);
-                workingDirectory = DNode::loadDirNode(workingBuffer); // should move to above for int j
                 break;
             }
 

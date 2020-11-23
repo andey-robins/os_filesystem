@@ -66,7 +66,6 @@ int FileSystem::createFile(char *filename, int fnameLen)
     }
     else if (existence == -3)
     {
-        cout << "Doesn't exist! Check path exists!" << endl;
         return -3;
     }
     
@@ -122,7 +121,6 @@ Returns -1 if the directory already exists
 int FileSystem::createDirectory(char *dirname, int dnameLen)
 {
     int existence = findDirectory(dirname, dnameLen);
-    cout << "Value from findDirectory(" << dirname << ", " << dnameLen << ") = " << existence << endl;
     //Directory or file already exists
     if (existence > 0)
     {
@@ -136,8 +134,6 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
             } else if (foundDirectory.entries[i].name == dirname[dnameLen - 1]) {
                 // a file with the name is present, can we still create a directory here?
                 // to be consistent with the previous iteration of this, we say no
-                cout << "Not creating a directory because a file exists." << endl;
-                cout << "Block number: " << existence << endl;
                 return -4;
             }
         }
@@ -163,13 +159,11 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
     DNode::dirNodeToBuffer(newDir, newDirBuff);
     if (myPM->writeDiskBlock(nodeBlock, newDirBuff) != 0)
     {
-        cout <<"Could not write newly created dir" << endl;
         return -4;
     }
     //Update the parent directory to reflect the addition
     if (updateDirectory(dirname, dnameLen, 'D', nodeBlock) < 0)
     {
-        cout << "Could not update parent directory" << endl;
         return -4;
     }
     //If it makes it this far, we have succeeded at creating the directory
@@ -293,7 +287,6 @@ Returns -1 if the file does not exist
 int FileSystem::deleteFile(char *filename, int fnameLen)
 {
     int res;
-    int linkedDir = 0;
     if (openOrLocked(filename, fnameLen))
         return -2;
     //Get the block number of the desired file
@@ -338,43 +331,63 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
                 break;
         }
     }
-    //Remove the file from its parent node's entries
-    int parent = pathExists(filename, fnameLen - 2);
-    if (parent < 0)
-        return -3;
+    // Remove the file from its parent node's entries
+    // find the proper root DNode if we're in the disks root dir
+    int parent = 1;
+    if (fnameLen == 2) {
+        char workingBuffer[64];
+        myPM->readDiskBlock(parent, workingBuffer);
+        DNode workingDirectory = DNode::loadDirNode(workingBuffer);
+
+        for (int i = 0; i < 10; i++) {
+            if (workingDirectory.entries[i].name == filename[1]) {
+                break;
+            }
+
+            if (i == 9 && workingDirectory.nextDirectPointer != 0) {
+                parent = workingDirectory.nextDirectPointer;
+                myPM->readDiskBlock(parent, workingBuffer);
+                workingDirectory = DNode::loadDirNode(workingBuffer);
+                i = -1;
+            }
+        }
+    } else {
+        // otherwise find the parent correctly
+        parent = findDirectory(filename, fnameLen - 2);
+        if (parent < 0)
+            return -3;
+    }
+    
     myPM->readDiskBlock(parent, fBuffer);
     DNode parentNode = DNode::loadDirNode(fBuffer);
+
+    // look for the corrent ptr to the DNode for the directory
     for (int i = 0; i < 10; i++)
     {
-        if (parentNode.entries[i].name == filename[fnameLen - 1])
+        if (parentNode.entries[i].name == filename[fnameLen - 3])
         {
+            // move down into the directory's DNode
+            parent = parentNode.entries[i].subPointer;
+            myPM->readDiskBlock(parent, fBuffer);
+            parentNode = DNode::loadDirNode(fBuffer);
+            break;
+        }
+    }
+
+    // erase the file entry in the DNode
+    for (int i = 0; i < 10; i++) {
+        if (parentNode.entries[i].name == filename[fnameLen - 1]) {
             parentNode.entries[i].name = '0';
             parentNode.entries[i].subPointer = 0;
             parentNode.entries[i].type = '0';
             break;
         }
-
-        if (i == 9 && parentNode.nextDirectPointer != 0)
-        {
-          linkedDir = parentNode.nextDirectPointer;
-          i = -1;
-          myPM->readDiskBlock(parentNode.nextDirectPointer, fBuffer);
-          parentNode = DNode::loadDirNode(fBuffer);
-        }
     }
 
-    if (linkedDir != 0)
-    {
-      DNode::dirNodeToBuffer(parentNode, fBuffer);
-      myPM -> writeDiskBlock(linkedDir, fBuffer);
-    }
+    //Write the parent node back to its original location
+    DNode::dirNodeToBuffer(parentNode, fBuffer);
+    myPM->writeDiskBlock(parent, fBuffer);
 
-    else
-    {
-      //Write the parent node back to its original location
-      DNode::dirNodeToBuffer(parentNode, fBuffer);
-      myPM->writeDiskBlock(parent, fBuffer);
-    }
     //Delete the block used by the file inode and restore bit vectors
     res = myPM->returnDiskBlock(existence);
     if (res == -1)
@@ -394,75 +407,100 @@ Returns -1 if the directory doesn't exist
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
     //Find the block number of the directory to be deleted
-    int pathVal = pathExists(dirname, dnameLen);
-    if (pathVal < 0)
+    int existence = findDirectory(dirname, dnameLen);
+    cout << "Return value from findDirectory in deleteDirectory  is " << existence << endl;
+    if (existence < 0)
         return -1;
+
     //Check if the path found actually leads to a file
     char buffer[64];
-    myPM->readDiskBlock(pathVal, buffer);
-    if (isalpha(buffer[1])) return -1;
+    myPM->readDiskBlock(existence, buffer);
+    DNode foundDirectory = DNode::loadDirNode(buffer);
+    for (int i = 0; i < 10; i++) {
+        if (foundDirectory.entries[i].name == dirname[dnameLen - 1] && foundDirectory.entries[i].type == 'F') {
+            return -1;
+        }
+    }
 
-    char toDelete[64];
-    myPM->readDiskBlock(pathVal, toDelete);
-    DNode delDir = DNode::loadDirNode(toDelete);
+    // iterate through all DNodes associated with the directory to ensure there is nothing in it
     for (int i = 0; i < 10; i++)
     {
         //Return error code if the directory has a nonempty entry
-        if (delDir.entries[i].subPointer != 0)
+        if (foundDirectory.entries[i].subPointer != 0)
         {
+            cout << "Found a file at block: " << foundDirectory.entries[i].subPointer << endl;
             return -2;
         }
         //We must check any overflows of the directory as well
-        if (i == 9 && delDir.nextDirectPointer != 0)
+        if (i == 9 && foundDirectory.nextDirectPointer != 0)
         {
+            myPM->readDiskBlock(foundDirectory.nextDirectPointer, buffer);
+            foundDirectory = DNode::loadDirNode(buffer);
             i = -1;
-            myPM->readDiskBlock(delDir.nextDirectPointer, toDelete);
-            delDir = DNode::loadDirNode(toDelete);
         }
     }
+
+    // free all the DNode blocks
     //Read back in the original directory in case we went into an overflow
-    myPM->readDiskBlock(pathVal, toDelete);
-    delDir = DNode::loadDirNode(toDelete);
-    while (delDir.nextDirectPointer != 0)
+    myPM->readDiskBlock(existence, buffer);
+    foundDirectory = DNode::loadDirNode(buffer);
+    while (foundDirectory.nextDirectPointer != 0)
     {
         //Make sure to delete the original and move on if needed to overflow directory
-        myPM->returnDiskBlock(pathVal);
-        pathVal = delDir.nextDirectPointer;
-        myPM->readDiskBlock(pathVal, toDelete);
-        delDir = DNode::loadDirNode(toDelete);
+        myPM->returnDiskBlock(existence);
+        existence = foundDirectory.nextDirectPointer;
+        myPM->readDiskBlock(existence, buffer);
+        foundDirectory = DNode::loadDirNode(buffer);
     }
     //Delete the final directory / overflow directory
-    myPM->returnDiskBlock(pathVal);
-    //And remove the entry from its parent
-    int parentVal = pathExists(dirname, dnameLen - 2);
-    if (parentVal < 0) return -3;
-    myPM->readDiskBlock(parentVal, buffer);
-    DNode parent = DNode::loadDirNode(buffer);
+    myPM->returnDiskBlock(existence);
+
+    // Remove the file from its parent node's entries
+    // find the proper root DNode if we're in the disks root dir
+    int parent = 1;
+    if (dnameLen == 2) {
+        char workingBuffer[64];
+        myPM->readDiskBlock(parent, workingBuffer);
+        DNode workingDirectory = DNode::loadDirNode(workingBuffer);
+
+        for (int i = 0; i < 10; i++) {
+            if (workingDirectory.entries[i].name == dirname[1]) {
+                break;
+            }
+
+            if (i == 9 && workingDirectory.nextDirectPointer != 0) {
+                parent = workingDirectory.nextDirectPointer;
+                myPM->readDiskBlock(parent, workingBuffer);
+                workingDirectory = DNode::loadDirNode(workingBuffer);
+                i = -1;
+            }
+        }
+    } else {
+        // otherwise find the parent correctly
+        parent = findDirectory(dirname, dnameLen - 2);
+        if (parent < 0)
+            return -3;
+    }
+
+    myPM->readDiskBlock(parent, buffer);
+    DNode parentNode = DNode::loadDirNode(buffer);
     for (int i = 0; i < 10; i++)
     {
         //If the new entry has been found in parent directory
-        if (parent.entries[i].name == dirname[dnameLen-1])
+        if (parentNode.entries[i].name == dirname[dnameLen-1])
         {
-            parent.entries[i].name = '0';
-            parent.entries[i].subPointer = 0;
-            parent.entries[i].type = '0';
+            parentNode.entries[i].name = '0';
+            parentNode.entries[i].subPointer = 0;
+            parentNode.entries[i].type = '0';
             //Write out the updated parent to its original block
-            DNode::dirNodeToBuffer(parent, buffer);
-            myPM->writeDiskBlock(parentVal, buffer);
-            break;
+            DNode::dirNodeToBuffer(parentNode, buffer);
+            myPM->writeDiskBlock(parent, buffer);
+            // success!
+            return 0;
         }
-        //Go to overflow directory if necessary/possible
-        else if(i == 9 && parent.nextDirectPointer != 0)
-        {
-            i = -1;
-            parentVal = parent.nextDirectPointer;
-            myPM->readDiskBlock(parentVal, buffer);
-            parent = DNode::loadDirNode(buffer);
-        }
-        else if (i==9) return -3;
     }
-    //Success, return 0
-    return 0;
+    // some other failure happened! uh oh!
+    return -3;
 }
 
 /*
@@ -1358,7 +1396,7 @@ int FileSystem::findDirectory(char* dname, int dnameLen) {
     if (!validateFilename(dname, dnameLen))
         return -3;
 
-    cout << "Filename is valid: " << dname << endl;
+    // cout << "Filename is valid: " << dname << endl;
 
     // begin traversal of the file path to find the file
     char workingBuffer[64];
@@ -1369,11 +1407,11 @@ int FileSystem::findDirectory(char* dname, int dnameLen) {
 
         myPM->readDiskBlock(nextBlock, workingBuffer);
         DNode workingDirectory = DNode::loadDirNode(workingBuffer);
-        cout << "Loaded working directory from block: " << nextBlock << endl;
+        // cout << "Loaded working directory from block: " << nextBlock << endl;
 
         for (int j = 0; j < 10; j++) {
 
-            cout << "Searching block. On entry " << j << endl;
+            // cout << "Searching block. On entry " << j << endl;
             
             // check the entry to see if it points to the next directory
             if (workingDirectory.entries[j].name == dname[i]) {
@@ -1468,7 +1506,6 @@ int FileSystem::pathExists(char *path, int pathLen)
                 //Nonterminal path is file, means path invalid
                 else
                 {
-                    cout << "Our path is non-terminal/invalid" << endl;
                     return -3;
                 }
             }
@@ -1489,17 +1526,9 @@ int FileSystem::pathExists(char *path, int pathLen)
             if (rootDir.entries[0].name != path[1])
             {
                 //root dir not found or valid
-                cout << "Iterator is at " << i << endl;
-                cout << "Path len is " << pathLen << endl;
-                cout << "The check len is " << pathLen-1 <<endl;
-                cout << "Next step not found, path invalid" << endl;
-                cout << "returning -4" << endl;
                 return -4;
             }
-            cout << "Iterator is at " << i << endl;
-            cout << "Path len is " << pathLen << endl;
-            cout << "The check len is " << pathLen-1 <<endl;
-            cout << "Next step not found, path invalid" << endl;
+
             return -3;
         }
     }

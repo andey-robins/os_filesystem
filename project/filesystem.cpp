@@ -49,7 +49,6 @@ Returns -1 if the file already exists
 int FileSystem::createFile(char *filename, int fnameLen)
 {
     int existence = findFile(filename, fnameLen);
-    cout << existence << endl;
     //File or directory already exists
     if (existence > 0)
     {
@@ -415,7 +414,6 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
     //Find the block number of the directory to be deleted
     int existence = findDirectory(dirname, dnameLen);
-    cout << "Return value from findDirectory in deleteDirectory  is " << existence << endl; // currently gets 20, which loads the storage of /g/a and has a listing for /g/a/g
     if (existence < 0)
         return -1;
 
@@ -445,15 +443,11 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
         //Return error code if the directory has a nonempty entry
         if (foundDirectory.entries[i].subPointer != 0)
         {
-            cout << "Found a file at block:  " << foundDirectory.entries[i].subPointer << endl;
-            cout << "Found a file with name: " << foundDirectory.entries[i].name << endl;
-            cout << "Found a file with type: " << foundDirectory.entries[i].type << endl;
             return -2;
         }
         //We must check any overflows of the directory as well
         if (i == 9 && foundDirectory.nextDirectPointer != 0)
         {
-            cout << "Overflowing" << endl;
             myPM->readDiskBlock(foundDirectory.nextDirectPointer, buffer);
             foundDirectory = DNode::loadDirNode(buffer);
             i = -1;
@@ -1434,8 +1428,6 @@ int FileSystem::findDirectory(char* dname, int dnameLen) {
     if (!validateFilename(dname, dnameLen))
         return -3;
 
-    // cout << "Filename is valid: " << dname << endl;
-
     // begin traversal of the file path to find the file
     char workingBuffer[64];
     int nextBlock = 1; // set to 0 so we load the root directory first
@@ -1445,11 +1437,8 @@ int FileSystem::findDirectory(char* dname, int dnameLen) {
 
         myPM->readDiskBlock(nextBlock, workingBuffer);
         DNode workingDirectory = DNode::loadDirNode(workingBuffer);
-        // cout << "Loaded working directory from block: " << nextBlock << endl;
 
         for (int j = 0; j < 10; j++) {
-
-            // cout << "Searching block. On entry " << j << endl;
             
             // check the entry to see if it points to the next directory
             if (workingDirectory.entries[j].name == dname[i]) {

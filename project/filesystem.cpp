@@ -382,6 +382,13 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
             parentNode.entries[i].type = '0';
             break;
         }
+
+        if (i == 9 && parentNode.nextDirectPointer != 0) {
+            parent = parentNode.nextDirectPointer;
+            myPM->readDiskBlock(parent, fBuffer);
+            parentNode = DNode::loadDirNode(fBuffer);
+            i = -1;
+        }
     }
 
     //Write the parent node back to its original location
@@ -438,12 +445,15 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
         //Return error code if the directory has a nonempty entry
         if (foundDirectory.entries[i].subPointer != 0)
         {
-            cout << "Found a file at block: " << foundDirectory.entries[i].subPointer << endl;
+            cout << "Found a file at block:  " << foundDirectory.entries[i].subPointer << endl;
+            cout << "Found a file with name: " << foundDirectory.entries[i].name << endl;
+            cout << "Found a file with type: " << foundDirectory.entries[i].type << endl;
             return -2;
         }
         //We must check any overflows of the directory as well
         if (i == 9 && foundDirectory.nextDirectPointer != 0)
         {
+            cout << "Overflowing" << endl;
             myPM->readDiskBlock(foundDirectory.nextDirectPointer, buffer);
             foundDirectory = DNode::loadDirNode(buffer);
             i = -1;
@@ -517,12 +527,17 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
             //Write out the updated parent to its original block
             DNode::dirNodeToBuffer(parentNode, buffer);
             myPM->writeDiskBlock(parent, buffer);
-            // success!
             return 0;
         }
+
+        if (i == 9 && parentNode.nextDirectPointer != 0) {
+            parent = parentNode.nextDirectPointer;
+            myPM->readDiskBlock(parent, buffer);
+            parentNode = DNode::loadDirNode(buffer);
+            i = -1;
+        }
     }
-    // some other failure happened! uh oh!
-    cout << "We go through the whole thing and there's an issue" << endl;
+    // success
     return -3;
 }
 

@@ -33,10 +33,10 @@ int main()
     Client *c4 = new Client(fs1);
     Client *c5 = new Client(fs2);
 
-    int i, r, l1, l2, f1, f2, f3, f4, f5;
+    int i, r, l1, l2, f1, f2, f3;
 
     char buf1[37], buf2[64], buf3[100], buf4[600];
-    char rbuf1[37], rbuf2[64], rbuf3[100], rbuf4[600];
+    char rbuf2[64];
 
     for (i = 0; i < 37; i++)
         buf1[i] = 'j';

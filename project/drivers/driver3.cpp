@@ -26,19 +26,13 @@ int main()
 
     DiskManager *dm = new DiskManager(d, 3, dp);
     FileSystem *fs1 = new FileSystem(dm, 'A');
-    FileSystem *fs2 = new FileSystem(dm, 'B');
-    FileSystem *fs3 = new FileSystem(dm, 'C');
     Client *c1 = new Client(fs1);
-    Client *c2 = new Client(fs2);
-    Client *c3 = new Client(fs3);
     Client *c4 = new Client(fs1);
     Client *c5 = new Client(fs1);
-    Client *c6 = new Client(fs2);
-    Client *c7 = new Client(fs3);
 
-    int i, r, l1, l2, f1, f2, f3, f4, f5;
+    int i, r, l1, f1, f2, f3;
     char buf1[37], buf2[64], buf3[100], buf4[600];
-    char rbuf1[37], rbuf2[64], rbuf3[100], rbuf4[600];
+    char rbuf1[37], rbuf4[600];
 
     for (i = 0; i < 37; i++)
         buf1[i] = 'J';

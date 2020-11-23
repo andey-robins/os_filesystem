@@ -45,11 +45,17 @@ public:
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
+
+    // custom helper methods
     int findFileINode(DerivedOpenFile exisitingOpenFile);
     int assignDirectAddress(FNode fNode, int memBlocks, int fileSize, int iNodeBlockPosition);
     int assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlockPosition);
+
+    bool validateFilename(char *fname, int fnameLen);
+    int findFile(char* fname, int fnameLen);
+    int findDirectory(char* dname, int dnameLen);
+
     int pathExists(char *path, int pathLen);
     int updateDirectory(char *path, int pathLen, char typeAdded, int nodeAdded);
     bool openOrLocked(char *filename, int fNameLen);
-    /* declare other public members here */
 };

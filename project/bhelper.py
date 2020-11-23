@@ -20,7 +20,7 @@ def main():
     if outputType == 'a':
         outputType = '\"\"'
     elif outputType == 'f':
-        outputType = 'fail'
+        outputType = 'fail\" | grep -v \"failed'
     else:
         outputType = 'correct'
 

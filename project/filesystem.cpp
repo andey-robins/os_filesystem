@@ -48,7 +48,8 @@ Returns -1 if the file already exists
 */
 int FileSystem::createFile(char *filename, int fnameLen)
 {
-    int existence = pathExists(filename, fnameLen);
+    int existence = findFile(filename, fnameLen);
+    cout << existence << endl;
     //File or directory already exists
     if (existence > 0)
     {
@@ -59,15 +60,16 @@ int FileSystem::createFile(char *filename, int fnameLen)
         //Otherwise it is already a directory
         else return -4;
     }
+    else if (existence == -2)
+    {
+        return -4;
+    }
     else if (existence == -3)
     {
         cout << "Doesn't exist! Check path exists!" << endl;
         return -3;
     }
-    else if (existence == -4)
-    {
-        return -4;
-    }
+    
 
     // allocate the file blocks
     int nodeBlock = myPM->getFreeDiskBlock();
@@ -1253,6 +1255,98 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
     return -1;
 }
 
+// validateFilename takes in a filename and the length of the name then validates it is a valid
+// file name.
+// returns false if it is invalid and true if it's valid
+bool FileSystem::validateFilename(char *fname, int fnameLen) {
+    // validate filename
+    for (int i = 0; i < fnameLen; i++)
+    {
+        if (i % 2 == 0)
+        {
+            // should be /
+            if (fname[i] != '/')
+            {
+                return false;
+            }
+        }
+        else
+        {
+            // should be alpha char
+            if (!isalpha(fname[i]))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/*
+findFile takes a filename and the length of that filename and then searches the disk for that file
+
+It returns -1 if the file cannot be found
+           -2 if an intermediate directory cannot be found
+           -3 if the file name is invalid
+           blockNum of the file if it is found
+*/
+int FileSystem::findFile(char* fname, int fnameLen) {
+
+    // validate the filename is correct
+    if (!validateFilename(fname, fnameLen))
+        return -3;
+
+    // begin traversal of the file path to find the file
+    char workingBuffer[64];
+    myPM->readDiskBlock(1, workingBuffer); // load the root dir
+    DNode workingDirectory = DNode::loadDirNode(workingBuffer);
+    int nextBlock = 1;
+
+    // iterate over the filename to sequentially access the name of each file we're looking for
+    for (int i = 1; i < fnameLen; i += 2) {
+        cout << "Looking for: " << fname[i] << endl;
+        // go through every file entry
+        for (int j = 0; j < 10; j++) {
+
+            // check each file entry to see if it is the one we're looking for
+            if (workingDirectory.entries[j].name == fname[i]) {
+                // found our next entry, so load it and step back
+                nextBlock = workingDirectory.entries[j].subPointer;
+                myPM->readDiskBlock(nextBlock, workingBuffer);
+                workingDirectory = DNode::loadDirNode(workingBuffer); // should move to above for int j
+                break;
+            }
+
+            // open the next dNode if there is a next one
+            if (j == 9 && workingDirectory.nextDirectPointer != 0) {
+                myPM->readDiskBlock(workingDirectory.nextDirectPointer, workingBuffer);
+                workingDirectory = DNode::loadDirNode(workingBuffer);
+                j = -1;
+            } else if (j == 9 && workingDirectory.nextDirectPointer == 0) {
+                // we've reached the end of the entries at this level without finding a matching entry
+                if (i == fnameLen - 1)
+                    return -1;
+                else
+                    return -2;
+            }
+        }
+    }
+
+    return nextBlock;
+}
+
+/*
+findDirctory takes a directoryname and the length of that directoryname and then searches the disk for that directory.
+It will then return the 
+
+It returns -1 if the file cannot be found
+           -3 if the file name is invalid
+           blockNum of the file if it is found
+*/
+int findDirectory(char* dname, int dnameLen) {
+
+}
+
 /*
 The pathExists function takes in the name of either a file or directory, which
 is also the path through the filesystem one expects to take to get to the file/directory.
@@ -1268,26 +1362,10 @@ int FileSystem::pathExists(char *path, int pathLen)
     //If pathLen is 0, we are looking for the directory
     if (pathLen == 0)
         return 1;
-    // validate filename
-    for (int i = 0; i < pathLen; i++)
-    {
-        if (i % 2 == 0)
-        {
-            // should be /
-            if (path[i] != '/')
-            {
-                return -3;
-            }
-        }
-        else
-        {
-            // should be alpha char
-            if (!isalpha(path[i]))
-            {
-                return -3;
-            }
-        }
-    }
+
+    if (!validateFilename(path, pathLen))
+        return -3;
+    
     //Start searching at root
     bool nextCharFound;
     char dirBuff[64];

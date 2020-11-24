@@ -34,12 +34,15 @@ FNode FNode::loadFileNode(char *buffer)
     node.name = buffer[0];
     //Next is node type
     node.type = buffer[1];
-    char tmp[4];
+    char tmp[5];
     //Read the next four bytes in for node size
     for (int i = 2; i < 6; i++)
     {
         tmp[i - 2] = buffer[i];
     }
+    //Because atoi LOVES to cause random segfaults
+    //Gotta tell it where the end is >:(
+    tmp[4] = '\0';
     node.size = atoi(tmp);
     //Read in 3 sections of 4 chars which will be the node's direct addresses
     for (int j = 0; j < 3; j++)
@@ -48,6 +51,7 @@ FNode FNode::loadFileNode(char *buffer)
         {
             tmp[i] = buffer[6 + i + (4 * j)];
         }
+        tmp[4] = '\0';
         node.directAddress[j] = atoi(tmp);
     }
     //Read in next 4 chars which will be the indirect address
@@ -55,6 +59,7 @@ FNode FNode::loadFileNode(char *buffer)
     {
         tmp[i] = buffer[i + 18];
     }
+    tmp[4] = '\0';
     node.indirectAddress = atoi(tmp);
     //Next 12 bytes is the date
     for (int i = 0; i < 3; i++)
@@ -63,6 +68,7 @@ FNode FNode::loadFileNode(char *buffer)
         {
             tmp[j] = buffer[22 + j + (4 * i)];
         }
+        tmp[4] = '\0';
         node.date[i] = atoi(tmp);
     }
     //Final 3 bytes is the emoji

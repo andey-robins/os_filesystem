@@ -77,8 +77,13 @@ int PartitionManager::returnDiskBlock(int blknum)
         overwriteBuffer[i] = 'c';
     }
 
-    // overwrite and return result
-    if (this->writeDiskBlock(blknum, overwriteBuffer) == 0)
+    int success = this->writeDiskBlock(blknum, overwriteBuffer);
+    //Write changes back to disk because if not the bitvector gets funky
+    char buff1[64];
+    myBitVector->getBitVector((unsigned int *)buff1);
+    writeDiskBlock(0, buff1);
+    
+    if (success == 0)
     {
         return 0;
     }

@@ -43,8 +43,8 @@ public:
     int appendFile(int fileDesc, char *data, int len);
     int seekFile(int fileDesc, int offset, int flag);
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
-    int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
-    int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
+    int getAttribute(char *filename, int fnameLen, char attributeType, char* attributeRes, int attributeResLen);
+    int setAttribute(char *filename, int fnameLen, char attributeType, char* attributeVal, int attributeValLen);
 
     // custom helper methods
     int findFileINode(DerivedOpenFile exisitingOpenFile);

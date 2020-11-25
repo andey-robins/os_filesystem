@@ -22,7 +22,7 @@ DNode DNode::createDirNode(char name, int ptr, char type)
 DNode DNode::loadDirNode(char *nodeBuffer)
 {
     DNode inode;
-    char temp[4];
+    char temp[5];
     // 10 "Entries"
     for (int i = 0; i < 10; i++)
     {
@@ -34,6 +34,7 @@ DNode DNode::loadDirNode(char *nodeBuffer)
         {
             temp[j] = nodeBuffer[i * 6 + j + 1];
         }
+        temp[4] = '\0';
         inode.entries[i].subPointer = atoi(temp);
 
         inode.entries[i].type = nodeBuffer[i * 6 + 5];
@@ -45,6 +46,7 @@ DNode DNode::loadDirNode(char *nodeBuffer)
     {
         temp[i] = nodeBuffer[i + 60];
     }
+    temp[4] = '\0';
     inode.nextDirectPointer = atoi(temp);
 
     return inode;

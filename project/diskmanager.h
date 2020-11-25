@@ -22,6 +22,7 @@ private:
     //Global shared variables to help with block listing and indexing
     int bufferIndexer = 1;
     int rootOffset = 1;
+    int endBlockOffset = 1;
     int blockCount = 0;
 
 public:

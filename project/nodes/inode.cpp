@@ -19,11 +19,12 @@ INode INode::loadIndirNode(char *nodebuffer)
     // direct addresses
     for (int i = 0; i < 16; i++)
     {
-        char directPointerChars[4];
+        char directPointerChars[5];
         for (int j = 0; j < 4; j++)
         {
             directPointerChars[j] = nodebuffer[i * 4 + j];
         }
+        directPointerChars[4] = '\0';
         inode.directPointers[i] = atoi(directPointerChars);
     }
 

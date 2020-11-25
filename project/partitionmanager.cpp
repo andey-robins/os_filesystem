@@ -52,7 +52,6 @@ int PartitionManager::getFreeDiskBlock()
         if (myBitVector->testBit(i) == OFF)
         {
             myBitVector->setBit(i);
-            cout << "Free bit is" << i << endl;
             myBitVector->getBitVector((unsigned int *) buffer);
             writeDiskBlock(0, buffer);
             return i;

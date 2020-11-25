@@ -3,13 +3,13 @@
 #include <iostream>
 using std::cerr;
 using std::endl;
-FNode FNode::createFileNode(char name, int dirAddressOne)
+FNode FNode::createFileNode(char name)
 {
     FNode fNode;
     fNode.name = name;
     fNode.type = 'F';
     fNode.size = 0;
-    fNode.directAddress[0] = dirAddressOne;
+    fNode.directAddress[0] = 0;
     fNode.directAddress[1] = 0;
     fNode.directAddress[2] = 0;
     fNode.indirectAddress = 0;

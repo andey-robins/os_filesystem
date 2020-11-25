@@ -36,7 +36,7 @@ using namespace std;
 int main()
 {
 
-    // Disk *d = new Disk(300, 64, const_cast<char *>("DISK1"));
+    Disk *d = new Disk(300, 64, const_cast<char *>("DISK1"));
     DiskPartition *dp = new DiskPartition[3];
 
     dp[0].partitionName = 'A';
@@ -50,35 +50,159 @@ int main()
     // All this stuff is commented out until we write the driver to supress compiler warnings
     //
 
-    // DiskManager *dm = new DiskManager(d, 3, dp);
-    // FileSystem *fs1 = new FileSystem(dm, 'A');
-    // FileSystem *fs2 = new FileSystem(dm, 'B');
-    // FileSystem *fs3 = new FileSystem(dm, 'C');
-    // Client *c1 = new Client(fs1);
-    // Client *c2 = new Client(fs2);
-    // Client *c3 = new Client(fs3);
-    // Client *c4 = new Client(fs1);
-    // Client *c5 = new Client(fs2);
+     DiskManager *dm = new DiskManager(d, 3, dp);
+     FileSystem *fs1 = new FileSystem(dm, 'A');
+     FileSystem *fs2 = new FileSystem(dm, 'B');
+     FileSystem *fs3 = new FileSystem(dm, 'C');
+     Client *c1 = new Client(fs1);
+     Client *c2 = new Client(fs2);
+     Client *c3 = new Client(fs3);
+     Client *c4 = new Client(fs1);
+     Client *c5 = new Client(fs2);
 
-    // int r;
+     int r;
+     char eBuf0[3], eBuf1[3], eBuf2[3], eBuf3[3];
+     char eBufr0[3], eBufr1[3], eBufr2[3], eBufr3[3];
+     char dBuf0[12], dBuf1[12], dBuf2[12], dBuf3[12];
+     char dBufr0[12], dBufr1[12], dBufr2[12], dBufr3[12];
 
-    /*
-What every need to show your set and get Attributes functions work
+     eBuf0[0] = '>';
+     eBuf0[1] = ':';
+     eBuf0[2] = ')';
 
-  r = c1->myFS->setAttributes(const_cast<char *>("/e/f"), ...);
-  cout << ...
-  r = c4->myFS->setAttributes(const_cast<char *>("/e/b"), ...);
-  cout << ...
-  r = c1->myFS->getAttributes(const_cast<char *>("/e/f"), ...);
-  cout << ...
-  r = c4->myFS->getAttributes(const_cast<char *>("/e/b"), ...);
-  cout << ...
-  r = c1->myFS->getAttributes(const_cast<char *>("/p"), ...);  //should failed!
-  cout << ...
-  r = c4->myFS->setAttributes(const_cast<char *>("/p"), ...);  //should failed!
-  cout << ...
+     eBuf1[0] = '>';
+     eBuf1[1] = ':';
+     eBuf1[2] = 'O';
+    
+     eBuf2[0] = ':';
+     eBuf2[1] = 'P';
+     eBuf2[2] = '\0';
+
+     eBuf3[0] = ':';
+     eBuf3[1] = 'D';
+     eBuf3[2] = '\0';
+
+    dBuf0[0] = '0';
+    dBuf0[1] = '0';
+    dBuf0[2] = '2';
+    dBuf0[3] = '3';
+    dBuf0[4] = '0';
+    dBuf0[5] = '0';
+    dBuf0[6] = '1';
+    dBuf0[7] = '1';
+    dBuf0[8] = '2';
+    dBuf0[9] = '0';
+    dBuf0[10] = '2';
+    dBuf0[11] = '0';
+
+    dBuf1[0] = '0';
+    dBuf1[1] = '0';
+    dBuf1[2] = '2';
+    dBuf1[3] = '5';
+    dBuf1[4] = '0';
+    dBuf1[5] = '0';
+    dBuf1[6] = '1';
+    dBuf1[7] = '1';
+    dBuf1[8] = '2';
+    dBuf1[9] = '0';
+    dBuf1[10] = '2';
+    dBuf1[11] = '0';
+
+    dBuf2[0] = '0';
+    dBuf2[1] = '0';
+    dBuf2[2] = '1';
+    dBuf2[3] = '7';
+    dBuf2[4] = '0';
+    dBuf2[5] = '0';
+    dBuf2[6] = '0';
+    dBuf2[7] = '9';
+    dBuf2[8] = '2';
+    dBuf2[9] = '0';
+    dBuf2[10] = '2';
+    dBuf2[11] = '0';
+
+    dBuf3[0] = '0';
+    dBuf3[1] = '0';
+    dBuf3[2] = '0';
+    dBuf3[3] = '9';
+    dBuf3[4] = '0';
+    dBuf3[5] = '0';
+    dBuf3[6] = '0';
+    dBuf3[7] = '3';
+    dBuf3[8] = '2';
+    dBuf3[9] = '0';
+    dBuf3[10] = '2';
+    dBuf3[11] = '0';
+    
+  //What every need to show your set and get Attributes functions work
+
+  r = c1->myFS->setAttribute(const_cast<char *>("/e/f"), 4, 'E', eBuf0, 3);
+  cout << "rv from setAttributes /e/f is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c4->myFS->setAttribute(const_cast<char *>("/e/b"), 4, 'E', eBuf0, 3);
+  cout << "rv from setAttributes /e/b is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c1->myFS->getAttribute(const_cast<char *>("/e/f"), 4, 'E', eBufr0, 3);
+  cout << "rv from getAttributes /e/f is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+    for (int i = 0; i < 3; i++)
+    {
+      cout << eBufr0[i];
+    }
+  cout << endl;
+  r = c4->myFS->getAttribute(const_cast<char *>("/e/b"), 4, 'E', eBufr0, 3);
+  cout << "rv from getAttributes /e/b is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+    for (int i = 0; i < 3; i++)
+    {
+      cout << eBufr0[i];
+    }
+  cout << endl;
+  r = c1->myFS->getAttribute(const_cast<char *>("/p"), 2, 'E', eBufr0, 3);  //should failed!
+  cout << "rv from getAttributes /p is " << r << (r == -2 ? " correct" : " fail") << endl;
+  r = c4->myFS->setAttribute(const_cast<char *>("/p"), 2, 'E', eBuf0, 3);  //should failed!
+  cout << "rv from setAttributes /p is " << r << (r == -2 ? " correct" : " fail") << endl;
   
-  r = c2->myFS->setAttributes(const_cast<char *>("/f"), ...);
+  r = c2->myFS->setAttribute(const_cast<char *>("/f"), 2, 'E', eBuf2, 3);
+  cout << "rv from setAttributes /f is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c5->myFS->setAttribute(const_cast<char *>("/z"), 2, 'E', eBuf1, 3);
+  cout << "rv from setAttributes /z is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c2->myFS->getAttribute(const_cast<char *>("/f"), 2, 'E', eBufr2, 3);
+  cout << "rv from getAttributes /f is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+    for (int i = 0; i < 3; i++)
+    {
+      cout << eBufr2[i];
+    }
+  cout << endl;
+  r = c5->myFS->getAttribute(const_cast<char *>("/z"), 2, 'E', eBufr1, 3);
+ cout << "rv from getAttributes /z is " << r << (r == 0 ? " correct" : " fail") << endl;
+ cout << "Attribute is ";
+  for (int i = 0; i < 3; i++)
+  {
+    cout << eBufr1[i];
+  }
+  cout << endl;
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/l"), 10, 'D', dBuf0, 12);
+  cout << "rv from setAttributes /o/o/o/a/l is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/d"), 10, 'D', dBuf1, 12);
+  cout << "rv from setAttributes /o/o/o/a/d is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/a/l"), 10, 'D', dBufr0, 12);
+  cout << "rv from getAttributes /o/o/o/a/l is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+  for (int i = 0; i < 12; i++)
+  {
+    cout << dBufr0[i];
+  }
+  cout << endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("o/o/o/a/d"), 10, 'D', dBufr1, 12);
+  cout << "rv from getAttributes /o/o/o/a/d is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+  for (int i = 0; i < 12; i++)
+  {
+    cout << dBufr1[i];
+  }
+  cout << endl;
+  
+  /*r = c2->myFS->setAttributes(const_cast<char *>("/f"), ...);
   cout << ...
   r = c5->myFS->setAttributes(const_cast<char *>("/z"), ...);
   cout << ...
@@ -94,25 +218,7 @@ What every need to show your set and get Attributes functions work
   r = c3->myFS->getAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
   cout << ...
   r = c3->myFS->getAttributes(const_cast<char *>("o/o/o/a/d"), ...);
-  cout << ...
-  
-  r = c2->myFS->setAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->setAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
-  r = c2->myFS->getAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->getAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
+  cout << ...*/
 
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/d"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("o/o/o/a/d"), ...);
-  cout << ...
-*/
     return 0;
 }

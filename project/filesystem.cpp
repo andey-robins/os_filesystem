@@ -71,28 +71,16 @@ int FileSystem::createFile(char *filename, int fnameLen)
 
     // allocate the file blocks
     int nodeBlock = myPM->getFreeDiskBlock();
-    int dataBlock = myPM->getFreeDiskBlock();
 
     // check that there is space for the file
-    if (nodeBlock == -1 || dataBlock == -1)
+    if (nodeBlock == -1)
     {
-        // if the node was correctly allocated, free the block since we can't create the file
-        if (nodeBlock != -1)
-        {
-            myPM->returnDiskBlock(nodeBlock);
-        }
-
-        // i believe this should be redundant, but to be safe, also check the dataBlock in case it was allocated incorrectly -andey
-        if (nodeBlock != -1)
-        {
-            myPM->returnDiskBlock(dataBlock);
-        }
 
         return -2;
     }
     // create file iNode
     char fileInode[64];
-    FNode fileNode = FNode::createFileNode(filename[fnameLen - 1], dataBlock);
+    FNode fileNode = FNode::createFileNode(filename[fnameLen - 1]);
     FNode::fileNodeToBuffer(fileNode, fileInode);
 
     // write iNode to disk
@@ -286,6 +274,12 @@ Returns -1 if the file does not exist
 int FileSystem::deleteFile(char *filename, int fnameLen)
 {
     int res;
+    //Exclusively used to get rid a root directory extension when needed.
+    //Hate this, but short on time
+    int oldWorkingDirPointer = 0;
+    DNode workingCopy = DNode::createDirNode('0', 0, '0');
+    bool isDirEmpty = true;
+
     if (openOrLocked(filename, fnameLen))
         return -2;
     //Get the block number of the desired file
@@ -344,6 +338,10 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
             }
 
             if (i == 9 && workingDirectory.nextDirectPointer != 0) {
+                //Make copy for later 
+                oldWorkingDirPointer = parent;
+                workingCopy = workingDirectory;
+
                 parent = workingDirectory.nextDirectPointer;
                 myPM->readDiskBlock(parent, workingBuffer);
                 workingDirectory = DNode::loadDirNode(workingBuffer);
@@ -393,6 +391,33 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     //Write the parent node back to its original location
     DNode::dirNodeToBuffer(parentNode, fBuffer);
     myPM->writeDiskBlock(parent, fBuffer);
+
+    //Check if current buffer/directory is completely empty,
+    //likely need some other way to confirm it's a directory extensions
+    for (int i = 0; i < 64; i++)
+    {
+        if (fBuffer[i] != '0')
+        {
+            isDirEmpty = false;
+            break;
+        }
+    }
+
+    if (isDirEmpty)
+    {
+        //I really hate this, but gotta get rid of that extension.
+        if (workingCopy.nextDirectPointer != 0)
+        {
+             char workingBuff[64];
+            cout << "Returning dir block " << parent << endl;
+            myPM->returnDiskBlock(parent);
+            workingCopy.nextDirectPointer = 0;
+            DNode::dirNodeToBuffer(workingCopy, workingBuff);
+            cout << "New working dir buff is " << workingBuff << endl;
+            cout << "Old working dir pointer " << oldWorkingDirPointer << endl;
+            myPM->writeDiskBlock(oldWorkingDirPointer, workingBuff);
+        }
+    }
 
     //Delete the block used by the file inode and restore bit vectors
     res = myPM->returnDiskBlock(existence);
@@ -847,7 +872,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
             if (success == -1)
             {
                 //We have a problem counting and assigning blocks
-                return -4;
+                return -3;
             }
 
             //Get updated FNode info
@@ -1103,16 +1128,168 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
     return 0;
 }
 
-// TODO: Implement this method, define its actions -- returns -100 as a major failure for now
-int FileSystem::getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
+/* gets the attribute for a file and fills a buffer with the results
+  Returns -1 if the filename is invalid
+          -2 if the filename does not exist
+          -3 if there is an invalid attribute type
+          -4 if the attribute value is invalid
+          -5 for any other reason
+          0 if successful
+*/
+int FileSystem::getAttribute(char *filename, int fnameLen, char attributeType, char* attributeRes, int attributeResLen)
 {
-    return -100;
+    bool invalidFilename = validateFilename(filename, fnameLen);
+    int fileExists = findFile(filename, fnameLen);
+
+    if (!invalidFilename) {
+        return -1;
+    }
+
+    if (fileExists < 0) {
+        return -2;
+    }
+
+    // E for emoticon, D for last access date
+    if (attributeType != 'E' && attributeType != 'D') {
+        return -3;
+    }
+
+    try
+    {       
+        char iNodeBuff[64];
+        myPM->readDiskBlock(fileExists, iNodeBuff);
+        
+        if (attributeType == 'D')
+        {
+            //This is the second to last part of the attribute that contains the year. 
+            //2020 must contain a '2', this is how we know it exists.
+            if (iNodeBuff[32] != '2')
+            {
+                //Attribute doesn't exist, so return error code
+                return -4;
+            }
+            for (int i = 0; i < attributeResLen; i++)
+            {
+                //Our date attributes will always start at index 22 for our file nodes.
+                //Since we will want to print the attribute, assign what is already in the buffer
+                //to the result variable. 
+                attributeRes[i] = iNodeBuff[i+22];
+            }
+            return 0;
+        }
+
+        else if (attributeType == 'E')
+        {
+            if (iNodeBuff[36] == '0')
+            {
+                //Attribute doesn't exist, so return error code
+                return -4;
+            }
+
+            for (int i = 0; i < attributeResLen; i++)
+            {
+                //Our emoji attributes will always start at index 34 for our file nodes.
+                //Since we will want to print the attribute, assign what is already in the buffer
+                //to the result variable.
+                attributeRes[i] = iNodeBuff[i+34];
+            }
+
+            return 0;
+        }        
+    }
+    catch(const exception &e)
+    {
+        return -4;
+    }
 }
 
-// TODO: Implement this method, define its actions -- returns -100 as a major failure for now
-int FileSystem::setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
+/* sets the attribute for a file to the passed value
+  Returns -1 if the filename is invalid
+          -2 if the filename does not exist
+          -3 if there is an invalid attribute type
+          -4 if the attribute value is invalid
+          -5 for any other reason
+          0 if successful
+*/
+int FileSystem::setAttribute(char *filename, int fnameLen, char attributeType, char* attributeVal, int attributeValLen)
 {
-    return -100;
+    bool invalidFilename = validateFilename(filename, fnameLen);
+    int fileExists = findFile(filename, fnameLen);
+
+    if (!invalidFilename) {
+        return -1;
+    }
+
+    if (fileExists < 0) {
+        return -2;
+    }
+
+    // E for emoticon, D for last access date
+    if (attributeType != 'E' && attributeType != 'D') {
+        return -3;
+    }
+
+    try
+    {
+        if (attributeType == 'E') {
+
+            //All emojis must have eyes, or the ':' character, so check for them. Account for
+            //valid length and potential eyebrows such as '>'. Not sure if mouths are mandatory
+            //so ignore for now
+            if ((attributeValLen > 1) && (attributeVal[0] == ':' || attributeVal[1] == ':'))
+            {
+                char iNodeBuff[64];
+                myPM -> readDiskBlock(fileExists, iNodeBuff);
+
+                //Our emoji attributes will always start at index 34 for our file nodes.
+                //It's also okay to overwite what already may be there
+                for (int i = 0; i < attributeValLen; i++)
+                {
+                    iNodeBuff[i+34] = attributeVal[i];
+                }
+                myPM -> writeDiskBlock(fileExists, iNodeBuff);
+                return 0;
+            }
+            else 
+            {
+                return -4;
+            }
+
+        } else if (attributeType == 'D') {
+            //We only have 12 bytes available for a date, (ex 002300112020),
+            //so we don't have room for date formats such as slashes. Instead, lets check for a 
+            //length of twelve to ensure that the date is valid (DDMMYYYY)
+            if (attributeValLen == 12)
+            {
+                char iNodeBuff[64];
+                myPM -> readDiskBlock(fileExists, iNodeBuff);
+                
+                //Our date attributes will always start at index 22 for our file nodes.
+                //It is okay to overwrite what may already be here.
+                for (int i = 0; i < attributeValLen; i++)
+                {
+                    iNodeBuff[i+22] = attributeVal[i];
+                }
+
+                myPM -> writeDiskBlock(fileExists, iNodeBuff);
+                return 0;
+            }
+
+            else 
+            {
+                //Not a valid date attribute
+                return -4;
+            } 
+
+        } else {
+            // should be caught earlier and never fire, but included for sake of completeness
+            return -3;
+        }
+    }
+    catch(const exception &e)
+    {
+        return -4;
+    }
 }
 
 int FileSystem::findFileINode(DerivedOpenFile existingOpenFile)
@@ -1129,12 +1306,7 @@ int FileSystem::assignDirectAddress(FNode fNode, int memBlocks, int fileSize, in
     int blocksInUse = 0;
     //Begin by looking at all current addressing, direct and indirect to tally what is in
     //use right now.
-    //If new filesize only requires one block, return as this is already prepared for us
 
-    if ((ceil(fileSize / 64.0) == 1) && fNode.directAddress[1] == 0)
-    {
-        return 0;
-    }
     //immediately check if we have/need indirect address
     if (memBlocks > 3)
     {
@@ -1207,9 +1379,8 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
 
     int diff = memBlocks - 3;
 
-    //Take care of all direct addresses unless they are already filled, remember to not
-    //mess with the first one.
-    for (int i = 1; i < 3; i++)
+    //Take care of all direct addresses unless they are already filled.
+    for (int i = 0; i < 3; i++)
     {
         if (fNode.directAddress[i] == 0)
         {

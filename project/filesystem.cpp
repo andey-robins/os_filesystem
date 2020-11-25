@@ -1201,6 +1201,8 @@ int FileSystem::getAttribute(char *filename, int fnameLen, char attributeType, c
     {
         return -4;
     }
+
+    return -4;
 }
 
 /* sets the attribute for a file to the passed value

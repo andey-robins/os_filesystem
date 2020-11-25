@@ -2,7 +2,7 @@ CC=g++
 #CFLAGS = -ggdb 
 CFLAGS = -Wall -ggdb
 
-all: drTester1 drTester2 drTester3 drTester4 drTester5 drTester6
+all: driver1 driver2 driver3 driver4 driver5 driver6
 
 #
 # FILE SYSTEM
@@ -40,28 +40,28 @@ inode.o: nodes/inode.cpp nodes/inode.h
 #
 # MAIN BUILD
 #
-drTester1: drivers/driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o drTester1 drivers/driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+driver1: drivers/driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o driver1 drivers/driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
-drTester2: drivers/driver2.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o drTester2 drivers/driver2.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+driver2: drivers/driver2.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o driver2 drivers/driver2.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
-drTester3: drivers/driver3.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o drTester3 drivers/driver3.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+driver3: drivers/driver3.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o driver3 drivers/driver3.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
-drTester4: drivers/driver4.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o drTester4 drivers/driver4.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+driver4: drivers/driver4.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o driver4 drivers/driver4.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
-drTester5: drivers/driver5.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o drTester5 drivers/driver5.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+driver5: drivers/driver5.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o driver5 drivers/driver5.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
-drTester6: drivers/driver6.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
-	$(CC) $(CFLAGS) -o drTester6 drivers/driver6.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+driver6: drivers/driver6.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC) $(CFLAGS) -o driver6 drivers/driver6.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 
+driver: driver.cpp client.h bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
+	$(CC)  -o driver driver.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o dnode.o fnode.o inode.o
 #
 # CLEAN
 #
-run:
-	./drTester ./drTester2 ./drTester3
 clean:
-	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 drTester drTester1 drTester2 drTester3 drTester4 drTester5 drTester6
+	rm -f partitionmanager.o diskmanager.o bitvector.o disk.o filesystem.o dnode.o fnode.o inode.o DISK1 driver1 driver2 driver3 driver4 driver5 driver6 driver

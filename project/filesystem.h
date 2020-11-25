@@ -30,6 +30,7 @@ class FileSystem
 
 public:
     FileSystem(DiskManager *dm, char fileSystemName);
+    ~FileSystem();
     int createFile(char *filename, int fnameLen);
     int createDirectory(char *dirname, int dnameLen);
     int lockFile(char *filename, int fnameLen);
@@ -43,8 +44,8 @@ public:
     int appendFile(int fileDesc, char *data, int len);
     int seekFile(int fileDesc, int offset, int flag);
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
-    int getAttribute(char *filename, int fnameLen, char attributeType, char* attributeRes, int attributeResLen);
-    int setAttribute(char *filename, int fnameLen, char attributeType, char* attributeVal, int attributeValLen);
+    int getAttribute(char *filename, int fnameLen, char attributeType, char *attributeRes, int attributeResLen);
+    int setAttribute(char *filename, int fnameLen, char attributeType, char *attributeVal, int attributeValLen);
 
     // custom helper methods
     int findFileINode(DerivedOpenFile exisitingOpenFile);
@@ -52,8 +53,8 @@ public:
     int assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlockPosition);
 
     bool validateFilename(char *fname, int fnameLen);
-    int findFile(char* fname, int fnameLen);
-    int findDirectory(char* dname, int dnameLen);
+    int findFile(char *fname, int fnameLen);
+    int findDirectory(char *dname, int dnameLen);
 
     int pathExists(char *path, int pathLen);
     int updateDirectory(char *path, int pathLen, char typeAdded, int nodeAdded);

@@ -181,6 +181,7 @@ int main()
     cout << eBufr1[i];
   }
   cout << endl;
+  //Could've sworn that these got created in driver 4 but okay?
   r = c3->myFS->createFile(const_cast<char *>("/o/o/o/z/l"), 10); 
   r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/z/l"), 10, 'D', dBuf0, 12);
   cout << "rv from setAttributes /o/o/o/z/l is " << r << (r == 0 ? " correct" : " fail") << endl;
@@ -204,5 +205,51 @@ int main()
   }
   cout << endl;
 
+  r = c2->myFS->setAttribute(const_cast<char *>("/f"), 2, 'D', dBuf2, 12);
+  cout << "rv from setAttributes /f is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c5->myFS->setAttribute(const_cast<char *>("/z"), 2, 'D', dBuf3, 12);
+  cout << "rv from setAttributes /z is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c2->myFS->getAttribute(const_cast<char *>("/f"), 2, 'D', dBufr2, 12);
+  cout << "rv from getAttributes /f is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+  for (int i = 0; i < 12; i++)
+  {
+    cout << dBufr2[i];
+  }
+  cout << endl;
+  r = c5->myFS->getAttribute(const_cast<char *>("/z"), 2, 'D', dBufr3, 12);
+  cout << "rv from getAttributes /z is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+  for (int i = 0; i < 12; i++)
+  {
+    cout << dBufr3[i];
+  }
+  cout << endl;
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/z/l"), 10, 'E', eBuf3, 3);
+  cout << "rv from setAttributes /o/o/o/z/l is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/z/d"), 10, 'E', eBuf0, 3);
+  cout << "rv from setAttributes /o/o/o/z/d is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/z/l"), 10, 'E', eBufr3, 3);
+  cout << "rv from getAttributes /o/o/o/z/l is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+  for (int i = 0; i < 3; i++)
+  {
+    cout << eBufr3[i];
+  }
+  cout << endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/z/d"), 10, 'E', eBufr0, 3);
+  cout << "rv from getAttributes /o/o/o/z/d is " << r << (r == 0 ? " correct" : " fail") << endl;
+  cout << "Attribute is ";
+  for (int i = 0; i < 3; i++)
+  {
+    cout << eBufr0[i];
+  }
+  cout << endl;
+
+  cout << "Driver 6 finished. Big thank @ Dr. Ward. This project was hella frustrating, but learned bigly." << endl;
+  cout << "Wow, that's a lot of code! - NYTimes" << endl;
+  cout << "'Uge. Tremenjus. - The DT himself" << endl;
+  cout << "A modern example of how nobody knows what they're doing. - Our Group" << endl;
+  cout << "Debugger? I hardly know her! - Mental jokes I tell myself to keep myself going" << endl;
     return 0;
 }

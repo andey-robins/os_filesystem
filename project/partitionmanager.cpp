@@ -52,7 +52,7 @@ int PartitionManager::getFreeDiskBlock()
         if (myBitVector->testBit(i) == OFF)
         {
             myBitVector->setBit(i);
-            myBitVector->getBitVector((unsigned int *) buffer);
+            myBitVector->getBitVector((unsigned int *)buffer);
             writeDiskBlock(0, buffer);
             return i;
         }
@@ -82,7 +82,7 @@ int PartitionManager::returnDiskBlock(int blknum)
     char buff1[64];
     myBitVector->getBitVector((unsigned int *)buff1);
     writeDiskBlock(0, buff1);
-    
+
     if (success == 0)
     {
         return 0;

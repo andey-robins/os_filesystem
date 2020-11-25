@@ -38,6 +38,13 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
     }
 }
 
+FileSystem::~FileSystem()
+{
+    delete[] lockedFileQueue;
+    delete[] openFileQueue;
+    delete[] myPM;
+}
+
 /*
 Creates a file whoise name is filename and the name has length fnameLen
 Returns -1 if the file already exists
@@ -55,9 +62,11 @@ int FileSystem::createFile(char *filename, int fnameLen)
         char buffer1[64];
         myPM->readDiskBlock(existence, buffer1);
         //Return -1 if the existing name is a file
-        if (isalpha(buffer1[1])) return -1;
+        if (isalpha(buffer1[1]))
+            return -1;
         //Otherwise it is already a directory
-        else return -4;
+        else
+            return -4;
     }
     else if (existence == -2)
     {
@@ -67,7 +76,6 @@ int FileSystem::createFile(char *filename, int fnameLen)
     {
         return -3;
     }
-    
 
     // allocate the file blocks
     int nodeBlock = myPM->getFreeDiskBlock();
@@ -115,10 +123,14 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
         myPM->readDiskBlock(existence, buffer1);
         DNode foundDirectory = DNode::loadDirNode(buffer1);
 
-        for (int i = 0; i < 10; i++) {
-            if (foundDirectory.entries[i].name == dirname[dnameLen - 1] && foundDirectory.entries[i].type == 'D') {
+        for (int i = 0; i < 10; i++)
+        {
+            if (foundDirectory.entries[i].name == dirname[dnameLen - 1] && foundDirectory.entries[i].type == 'D')
+            {
                 return -1;
-            } else if (foundDirectory.entries[i].name == dirname[dnameLen - 1]) {
+            }
+            else if (foundDirectory.entries[i].name == dirname[dnameLen - 1])
+            {
                 // a file with the name is present, can we still create a directory here?
                 // to be consistent with the previous iteration of this, we say no
                 return -4;
@@ -177,7 +189,8 @@ int FileSystem::lockFile(char *filename, int fnameLen)
         //Check if the path given actually leads to a directory
         char buffer[64];
         myPM->readDiskBlock(existence, buffer);
-        if (!isalpha(buffer[1])) return -4;
+        if (!isalpha(buffer[1]))
+            return -4;
         // file is unlocked: no return -1
         for (auto itLock = lockedFileQueue->begin(); itLock != lockedFileQueue->end(); ++itLock)
         {
@@ -293,7 +306,8 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     char fBuffer[64];
     myPM->readDiskBlock(existence, fBuffer);
     //Return an error if the file loaded in is actually a directory
-    if (!isalpha(fBuffer[1])) return -3;
+    if (!isalpha(fBuffer[1]))
+        return -3;
     FNode toDelete = FNode::loadFileNode(fBuffer);
     for (int i = 0; i < 3; i++)
     {
@@ -327,18 +341,22 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     // Remove the file from its parent node's entries
     // find the proper root DNode if we're in the disks root dir
     int parent = 1;
-    if (fnameLen == 2) {
+    if (fnameLen == 2)
+    {
         char workingBuffer[64];
         myPM->readDiskBlock(parent, workingBuffer);
         DNode workingDirectory = DNode::loadDirNode(workingBuffer);
 
-        for (int i = 0; i < 10; i++) {
-            if (workingDirectory.entries[i].name == filename[1]) {
+        for (int i = 0; i < 10; i++)
+        {
+            if (workingDirectory.entries[i].name == filename[1])
+            {
                 break;
             }
 
-            if (i == 9 && workingDirectory.nextDirectPointer != 0) {
-                //Make copy for later 
+            if (i == 9 && workingDirectory.nextDirectPointer != 0)
+            {
+                //Make copy for later
                 oldWorkingDirPointer = parent;
                 workingCopy = workingDirectory;
 
@@ -348,13 +366,15 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
                 i = -1;
             }
         }
-    } else {
+    }
+    else
+    {
         // otherwise find the parent correctly
         parent = findDirectory(filename, fnameLen - 2);
         if (parent < 0)
             return -3;
     }
-    
+
     myPM->readDiskBlock(parent, fBuffer);
     DNode parentNode = DNode::loadDirNode(fBuffer);
 
@@ -372,15 +392,18 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     }
 
     // erase the file entry in the DNode
-    for (int i = 0; i < 10; i++) {
-        if (parentNode.entries[i].name == filename[fnameLen - 1]) {
+    for (int i = 0; i < 10; i++)
+    {
+        if (parentNode.entries[i].name == filename[fnameLen - 1])
+        {
             parentNode.entries[i].name = '0';
             parentNode.entries[i].subPointer = 0;
             parentNode.entries[i].type = '0';
             break;
         }
 
-        if (i == 9 && parentNode.nextDirectPointer != 0) {
+        if (i == 9 && parentNode.nextDirectPointer != 0)
+        {
             parent = parentNode.nextDirectPointer;
             myPM->readDiskBlock(parent, fBuffer);
             parentNode = DNode::loadDirNode(fBuffer);
@@ -408,13 +431,10 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
         //I really hate this, but gotta get rid of that extension.
         if (workingCopy.nextDirectPointer != 0)
         {
-             char workingBuff[64];
-            cout << "Returning dir block " << parent << endl;
+            char workingBuff[64];
             myPM->returnDiskBlock(parent);
             workingCopy.nextDirectPointer = 0;
             DNode::dirNodeToBuffer(workingCopy, workingBuff);
-            cout << "New working dir buff is " << workingBuff << endl;
-            cout << "Old working dir pointer " << oldWorkingDirPointer << endl;
             myPM->writeDiskBlock(oldWorkingDirPointer, workingBuff);
         }
     }
@@ -447,15 +467,19 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
     DNode foundDirectory = DNode::loadDirNode(buffer);
 
     //Check if the path found actually leads to a file
-    for (int i = 0; i < 10; i++) {
-        if (foundDirectory.entries[i].name == dirname[dnameLen - 1] && foundDirectory.entries[i].type == 'F') {
+    for (int i = 0; i < 10; i++)
+    {
+        if (foundDirectory.entries[i].name == dirname[dnameLen - 1] && foundDirectory.entries[i].type == 'F')
+        {
             return -1;
         }
     }
 
     // load the DNode for the directory in question
-    for (int i = 0; i < 10; i++) {
-        if (foundDirectory.entries[i].name == dirname[dnameLen - 1]){
+    for (int i = 0; i < 10; i++)
+    {
+        if (foundDirectory.entries[i].name == dirname[dnameLen - 1])
+        {
             existence = foundDirectory.entries[i].subPointer;
             myPM->readDiskBlock(existence, buffer);
             foundDirectory = DNode::loadDirNode(buffer);
@@ -497,24 +521,30 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
     // Remove the file from its parent node's entries
     // find the proper root DNode if we're in the disks root dir
     int parent = 1;
-    if (dnameLen == 2) {
+    if (dnameLen == 2)
+    {
         char workingBuffer[64];
         myPM->readDiskBlock(parent, workingBuffer);
         DNode workingDirectory = DNode::loadDirNode(workingBuffer);
 
-        for (int i = 0; i < 10; i++) {
-            if (workingDirectory.entries[i].name == dirname[1]) {
+        for (int i = 0; i < 10; i++)
+        {
+            if (workingDirectory.entries[i].name == dirname[1])
+            {
                 break;
             }
 
-            if (i == 9 && workingDirectory.nextDirectPointer != 0) {
+            if (i == 9 && workingDirectory.nextDirectPointer != 0)
+            {
                 parent = workingDirectory.nextDirectPointer;
                 myPM->readDiskBlock(parent, workingBuffer);
                 workingDirectory = DNode::loadDirNode(workingBuffer);
                 i = -1;
             }
         }
-    } else {
+    }
+    else
+    {
         // otherwise find the parent correctly
         parent = findDirectory(dirname, dnameLen - 2);
         if (parent < 0)
@@ -525,8 +555,10 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
     DNode parentNode = DNode::loadDirNode(buffer);
 
     // load the DNode for the parent directory in question
-    for (int i = 0; i < 10; i++) {
-        if (parentNode.entries[i].name == dirname[dnameLen - 3]) {
+    for (int i = 0; i < 10; i++)
+    {
+        if (parentNode.entries[i].name == dirname[dnameLen - 3])
+        {
             // move down into the directory's DNode
             parent = parentNode.entries[i].subPointer;
             myPM->readDiskBlock(parent, buffer);
@@ -538,7 +570,7 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
     for (int i = 0; i < 10; i++)
     {
         //If the new entry has been found in parent directory
-        if (parentNode.entries[i].name == dirname[dnameLen-1])
+        if (parentNode.entries[i].name == dirname[dnameLen - 1])
         {
             parentNode.entries[i].name = '0';
             parentNode.entries[i].subPointer = 0;
@@ -549,7 +581,8 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
             return 0;
         }
 
-        if (i == 9 && parentNode.nextDirectPointer != 0) {
+        if (i == 9 && parentNode.nextDirectPointer != 0)
+        {
             parent = parentNode.nextDirectPointer;
             myPM->readDiskBlock(parent, buffer);
             parentNode = DNode::loadDirNode(buffer);
@@ -605,8 +638,9 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
         char buffer1[64];
         myPM->readDiskBlock(existence, buffer1);
         //Return -4 if the existing name is a directory
-        if (!isalpha(buffer1[1])) return -1;
-        
+        if (!isalpha(buffer1[1]))
+            return -1;
+
         //Create the open file instance and add it to the open file queue
         //We first have to generate a fileDescriptor integer and fill in
         //the DerivedOpenFile fields of fileDescriptor, fileName, fileNameLength,
@@ -775,9 +809,9 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
                 }
 
                 INode indirectInode = INode::loadIndirNode(indirectNodeBuffer);
-                
+
                 //Make sure we don't spill over direct pointers with off-by-one error.
-                if ((neededBlock - 3) < 16 )
+                if ((neededBlock - 3) < 16)
                 {
                     neededBlock = indirectInode.directPointers[neededBlock - 3];
                 }
@@ -848,7 +882,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
             myPM->readDiskBlock(iNodeBlockPosition, fNodeBuff);
             //Must convert this buffer into an FNode object
             FNode fNodeObj = FNode::loadFileNode(fNodeBuff);
-            int memBlocksRequired = max(ceil((len + temp.readWritePointer)/64.0), ceil(fNodeObj.size/64.0));
+            int memBlocksRequired = max(ceil((len + temp.readWritePointer) / 64.0), ceil(fNodeObj.size / 64.0));
 
             /*Now that we have an object to work with, we must parse the file bytes required for 
         writting, and get direct/indirect addressing set up. If the file bytes required are
@@ -857,10 +891,10 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         size needed will need that one, or more.
       */
             int newSize = temp.readWritePointer + len;
-            if ((ceil(newSize/64.0)) > 19)
+            if ((ceil(newSize / 64.0)) > 19)
             {
-              //File is too big, not in my house lol
-              return -3;
+                //File is too big, not in my house lol
+                return -3;
             }
 
             //We now need to count the current blocks, and determine if more are needed
@@ -919,7 +953,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
                 //If we have reached the next block, or the last iteration of the loop
                 if (location % 64 == 0 || loopIndex == len)
                 {
-                    
+
                     //192 bytes is the limit of our three direct addresses
                     if (isIndirect == false)
                     {
@@ -928,11 +962,10 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
                         if (loopIndex != len)
                         {
                             //Make sure we don't accidentally read in the indirect node, otherwise, read whats next
-                            if (startingBlock < 2 )
+                            if (startingBlock < 2)
                             {
-                                myPM->readDiskBlock(fNodeObj.directAddress[startingBlock+1], writeBuffer);
-                            } 
-                          
+                                myPM->readDiskBlock(fNodeObj.directAddress[startingBlock + 1], writeBuffer);
+                            }
                         }
                     }
 
@@ -943,7 +976,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
                         myPM->writeDiskBlock(iNode.directPointers[(startingBlock)-3], writeBuffer);
                         if (loopIndex != len)
                         {
-                          myPM->readDiskBlock(iNode.directPointers[(startingBlock - 3)+1], writeBuffer); 
+                            myPM->readDiskBlock(iNode.directPointers[(startingBlock - 3) + 1], writeBuffer);
                         }
                     }
                     startingBlock++;
@@ -1136,32 +1169,35 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
           -5 for any other reason
           0 if successful
 */
-int FileSystem::getAttribute(char *filename, int fnameLen, char attributeType, char* attributeRes, int attributeResLen)
+int FileSystem::getAttribute(char *filename, int fnameLen, char attributeType, char *attributeRes, int attributeResLen)
 {
     bool invalidFilename = validateFilename(filename, fnameLen);
     int fileExists = findFile(filename, fnameLen);
 
-    if (!invalidFilename) {
+    if (!invalidFilename)
+    {
         return -1;
     }
 
-    if (fileExists < 0) {
+    if (fileExists < 0)
+    {
         return -2;
     }
 
     // E for emoticon, D for last access date
-    if (attributeType != 'E' && attributeType != 'D') {
+    if (attributeType != 'E' && attributeType != 'D')
+    {
         return -3;
     }
 
     try
-    {       
+    {
         char iNodeBuff[64];
         myPM->readDiskBlock(fileExists, iNodeBuff);
-        
+
         if (attributeType == 'D')
         {
-            //This is the second to last part of the attribute that contains the year. 
+            //This is the second to last part of the attribute that contains the year.
             //2020 must contain a '2', this is how we know it exists.
             if (iNodeBuff[32] != '2')
             {
@@ -1172,8 +1208,8 @@ int FileSystem::getAttribute(char *filename, int fnameLen, char attributeType, c
             {
                 //Our date attributes will always start at index 22 for our file nodes.
                 //Since we will want to print the attribute, assign what is already in the buffer
-                //to the result variable. 
-                attributeRes[i] = iNodeBuff[i+22];
+                //to the result variable.
+                attributeRes[i] = iNodeBuff[i + 22];
             }
             return 0;
         }
@@ -1191,13 +1227,13 @@ int FileSystem::getAttribute(char *filename, int fnameLen, char attributeType, c
                 //Our emoji attributes will always start at index 34 for our file nodes.
                 //Since we will want to print the attribute, assign what is already in the buffer
                 //to the result variable.
-                attributeRes[i] = iNodeBuff[i+34];
+                attributeRes[i] = iNodeBuff[i + 34];
             }
 
             return 0;
-        }        
+        }
     }
-    catch(const exception &e)
+    catch (const exception &e)
     {
         return -4;
     }
@@ -1213,27 +1249,31 @@ int FileSystem::getAttribute(char *filename, int fnameLen, char attributeType, c
           -5 for any other reason
           0 if successful
 */
-int FileSystem::setAttribute(char *filename, int fnameLen, char attributeType, char* attributeVal, int attributeValLen)
+int FileSystem::setAttribute(char *filename, int fnameLen, char attributeType, char *attributeVal, int attributeValLen)
 {
     bool invalidFilename = validateFilename(filename, fnameLen);
     int fileExists = findFile(filename, fnameLen);
 
-    if (!invalidFilename) {
+    if (!invalidFilename)
+    {
         return -1;
     }
 
-    if (fileExists < 0) {
+    if (fileExists < 0)
+    {
         return -2;
     }
 
     // E for emoticon, D for last access date
-    if (attributeType != 'E' && attributeType != 'D') {
+    if (attributeType != 'E' && attributeType != 'D')
+    {
         return -3;
     }
 
     try
     {
-        if (attributeType == 'E') {
+        if (attributeType == 'E')
+        {
 
             //All emojis must have eyes, or the ':' character, so check for them. Account for
             //valid length and potential eyebrows such as '>'. Not sure if mouths are mandatory
@@ -1241,54 +1281,56 @@ int FileSystem::setAttribute(char *filename, int fnameLen, char attributeType, c
             if ((attributeValLen > 1) && (attributeVal[0] == ':' || attributeVal[1] == ':'))
             {
                 char iNodeBuff[64];
-                myPM -> readDiskBlock(fileExists, iNodeBuff);
+                myPM->readDiskBlock(fileExists, iNodeBuff);
 
                 //Our emoji attributes will always start at index 34 for our file nodes.
                 //It's also okay to overwite what already may be there
                 for (int i = 0; i < attributeValLen; i++)
                 {
-                    iNodeBuff[i+34] = attributeVal[i];
+                    iNodeBuff[i + 34] = attributeVal[i];
                 }
-                myPM -> writeDiskBlock(fileExists, iNodeBuff);
+                myPM->writeDiskBlock(fileExists, iNodeBuff);
                 return 0;
             }
-            else 
+            else
             {
                 return -4;
             }
-
-        } else if (attributeType == 'D') {
+        }
+        else if (attributeType == 'D')
+        {
             //We only have 12 bytes available for a date, (ex 002300112020),
-            //so we don't have room for date formats such as slashes. Instead, lets check for a 
+            //so we don't have room for date formats such as slashes. Instead, lets check for a
             //length of twelve to ensure that the date is valid (DDMMYYYY)
             if (attributeValLen == 12)
             {
                 char iNodeBuff[64];
-                myPM -> readDiskBlock(fileExists, iNodeBuff);
-                
+                myPM->readDiskBlock(fileExists, iNodeBuff);
+
                 //Our date attributes will always start at index 22 for our file nodes.
                 //It is okay to overwrite what may already be here.
                 for (int i = 0; i < attributeValLen; i++)
                 {
-                    iNodeBuff[i+22] = attributeVal[i];
+                    iNodeBuff[i + 22] = attributeVal[i];
                 }
 
-                myPM -> writeDiskBlock(fileExists, iNodeBuff);
+                myPM->writeDiskBlock(fileExists, iNodeBuff);
                 return 0;
             }
 
-            else 
+            else
             {
                 //Not a valid date attribute
                 return -4;
-            } 
-
-        } else {
+            }
+        }
+        else
+        {
             // should be caught earlier and never fire, but included for sake of completeness
             return -3;
         }
     }
-    catch(const exception &e)
+    catch (const exception &e)
     {
         return -4;
     }
@@ -1484,7 +1526,7 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
                     if (existingIndirectNode.directPointers[existingPointers] == -1)
                     {
                         //Did we run out of space?
-                        existingIndirectNode.directPointers[existingPointers ] = 0;
+                        existingIndirectNode.directPointers[existingPointers] = 0;
                         return -1;
                     }
                     existingPointers++;
@@ -1504,7 +1546,8 @@ int FileSystem::assignIndirectAddress(FNode fNode, int memBlocks, int iNodeBlock
 // validateFilename takes in a filename and the length of the name then validates it is a valid
 // file name.
 // returns false if it is invalid and true if it's valid
-bool FileSystem::validateFilename(char *fname, int fnameLen) {
+bool FileSystem::validateFilename(char *fname, int fnameLen)
+{
     // validate filename
     for (int i = 0; i < fnameLen; i++)
     {
@@ -1536,7 +1579,8 @@ It returns -1 if the file cannot be found
            -3 if the file name is invalid
            blockNum of the file if it is found
 */
-int FileSystem::findFile(char* fname, int fnameLen) {
+int FileSystem::findFile(char *fname, int fnameLen)
+{
 
     // validate the filename is correct
     if (!validateFilename(fname, fnameLen))
@@ -1547,27 +1591,33 @@ int FileSystem::findFile(char* fname, int fnameLen) {
     int nextBlock = 1; // set to 0 so we load the root directory first
 
     // iterate over the filename to sequentially access the name of each file we're looking for
-    for (int i = 1; i < fnameLen; i += 2) {
+    for (int i = 1; i < fnameLen; i += 2)
+    {
 
         myPM->readDiskBlock(nextBlock, workingBuffer);
         DNode workingDirectory = DNode::loadDirNode(workingBuffer);
-        
+
         // go through every file entry
-        for (int j = 0; j < 10; j++) {
+        for (int j = 0; j < 10; j++)
+        {
 
             // check each file entry to see if it is the one we're looking for
-            if (workingDirectory.entries[j].name == fname[i]) {
+            if (workingDirectory.entries[j].name == fname[i])
+            {
                 // found our next entry, so store that block and continue our traversal
                 nextBlock = workingDirectory.entries[j].subPointer;
                 break;
             }
 
             // open the next dNode if there is a next one
-            if (j == 9 && workingDirectory.nextDirectPointer != 0) {
+            if (j == 9 && workingDirectory.nextDirectPointer != 0)
+            {
                 myPM->readDiskBlock(workingDirectory.nextDirectPointer, workingBuffer);
                 workingDirectory = DNode::loadDirNode(workingBuffer);
                 j = -1;
-            } else if (j == 9 && workingDirectory.nextDirectPointer == 0) {
+            }
+            else if (j == 9 && workingDirectory.nextDirectPointer == 0)
+            {
                 // we've reached the end of the entries at this level without finding a matching entry
                 if (i == fnameLen - 1)
                     return -1;
@@ -1595,7 +1645,8 @@ It returns -1 if the directory cannot be found
            -3 if the directory name is invalid
            blockNum of the parent directory (the one listing the directory dname) if found
 */
-int FileSystem::findDirectory(char* dname, int dnameLen) {
+int FileSystem::findDirectory(char *dname, int dnameLen)
+{
 
     // validate the filename is correct
     if (!validateFilename(dname, dnameLen))
@@ -1606,25 +1657,31 @@ int FileSystem::findDirectory(char* dname, int dnameLen) {
     int nextBlock = 1; // set to 0 so we load the root directory first
 
     // iterate over the filename to sequentially traverse the DISK looking for the correct directory
-    for (int i = 1; i < dnameLen - 2; i += 2) {
+    for (int i = 1; i < dnameLen - 2; i += 2)
+    {
 
         myPM->readDiskBlock(nextBlock, workingBuffer);
         DNode workingDirectory = DNode::loadDirNode(workingBuffer);
 
-        for (int j = 0; j < 10; j++) {
-            
+        for (int j = 0; j < 10; j++)
+        {
+
             // check the entry to see if it points to the next directory
-            if (workingDirectory.entries[j].name == dname[i]) {
+            if (workingDirectory.entries[j].name == dname[i])
+            {
                 nextBlock = workingDirectory.entries[j].subPointer;
                 break;
             }
 
-            // open the next dNode if there is a next one 
-            if (j == 9 && workingDirectory.nextDirectPointer != 0) {
+            // open the next dNode if there is a next one
+            if (j == 9 && workingDirectory.nextDirectPointer != 0)
+            {
                 myPM->readDiskBlock(workingDirectory.nextDirectPointer, workingBuffer);
                 workingDirectory = DNode::loadDirNode(workingBuffer);
                 j = -1;
-            } else if (j == 9 && workingDirectory.nextDirectPointer == 0) {
+            }
+            else if (j == 9 && workingDirectory.nextDirectPointer == 0)
+            {
                 // we've reached the end of the entries at this level without finding a matching entry
                 if (i == dnameLen - 1)
                     return -1;
@@ -1632,19 +1689,21 @@ int FileSystem::findDirectory(char* dname, int dnameLen) {
                     return -2;
             }
         }
-
     }
 
     // ensure that the correct name is present in the block we return
     myPM->readDiskBlock(nextBlock, workingBuffer);
     DNode finalNode = DNode::loadDirNode(workingBuffer);
 
-    for (int i = 0; i < 10; i++) {
-        if (finalNode.entries[i].name == dname[dnameLen - 1]) {
+    for (int i = 0; i < 10; i++)
+    {
+        if (finalNode.entries[i].name == dname[dnameLen - 1])
+        {
             return nextBlock;
         }
 
-        if (i == 9 && finalNode.nextDirectPointer != 0) {
+        if (i == 9 && finalNode.nextDirectPointer != 0)
+        {
             nextBlock = finalNode.nextDirectPointer;
             myPM->readDiskBlock(nextBlock, workingBuffer);
             finalNode = DNode::loadDirNode(workingBuffer);
@@ -1673,7 +1732,7 @@ int FileSystem::pathExists(char *path, int pathLen)
 
     if (!validateFilename(path, pathLen))
         return -3;
-    
+
     //Start searching at root
     bool nextCharFound;
     char dirBuff[64];
@@ -1709,11 +1768,11 @@ int FileSystem::pathExists(char *path, int pathLen)
                     return -3;
                 }
             }
-            if (j==9 && currentDir.nextDirectPointer != 0)
+            if (j == 9 && currentDir.nextDirectPointer != 0)
             {
-              j = -1;
-              myPM->readDiskBlock(currentDir.nextDirectPointer, dirBuff);
-              currentDir = DNode::loadDirNode(dirBuff); 
+                j = -1;
+                myPM->readDiskBlock(currentDir.nextDirectPointer, dirBuff);
+                currentDir = DNode::loadDirNode(dirBuff);
             }
         }
         //Path invalid if next step not found and not at end of path
@@ -1757,91 +1816,89 @@ int FileSystem::updateDirectory(char *path, int pathLen, char typeAdded, int nod
     //Load the parent directory info, edit, then rewrite
     myPM->readDiskBlock(parentNode, buff1);
     DNode parent = DNode::loadDirNode(buff1);
-  
+
     //We added a directory
     myPM->readDiskBlock(nodeAdded, buff1);
 
-    //First, check to ensure that we have enough room in the file entry slots, if not, 
+    //First, check to ensure that we have enough room in the file entry slots, if not,
     //we need to use the next direct pointer to store new information.
     if (parent.nextDirectPointer == 0 && parent.entries[9].subPointer != 0)
     {
-      parent.nextDirectPointer = myPM->getFreeDiskBlock();
-      if (parent.nextDirectPointer == -1)
-      {
-        //We have run out of disk block space
-        parent.nextDirectPointer = 0;
-        return -1;
-      }
-      //Since a linked dir does not exist yet, we create a new one and populate it 
-      //with information that would not otherwise fit in the previous one.
-      DNode linkedDnode = DNode::createDirNode('0', 0, '0');
-      
-      for (int i = 0; i < 10; i++)
-      {
-        if (linkedDnode.entries[i].subPointer == 0)
+        parent.nextDirectPointer = myPM->getFreeDiskBlock();
+        if (parent.nextDirectPointer == -1)
         {
-          linkedDnode.entries[i].subPointer = nodeAdded;
-          linkedDnode.entries[i].name = path[pathLen - 1];
-          linkedDnode.entries[i].type = typeAdded;
-          break;
+            //We have run out of disk block space
+            parent.nextDirectPointer = 0;
+            return -1;
         }
-      }
-      //We now need to write the updated dir to the disk with it's new link
-      //along with the linked dir and all it's info.
-      //buff1[0] = '\0';
-      DNode::dirNodeToBuffer(linkedDnode, buff1);
-      myPM->writeDiskBlock(parent.nextDirectPointer, buff1);
-      //buff1[0] = '\0';
-      DNode::dirNodeToBuffer(parent, buff1);
-      myPM->writeDiskBlock(parentNode, buff1);
-      return parentNode;
+        //Since a linked dir does not exist yet, we create a new one and populate it
+        //with information that would not otherwise fit in the previous one.
+        DNode linkedDnode = DNode::createDirNode('0', 0, '0');
+
+        for (int i = 0; i < 10; i++)
+        {
+            if (linkedDnode.entries[i].subPointer == 0)
+            {
+                linkedDnode.entries[i].subPointer = nodeAdded;
+                linkedDnode.entries[i].name = path[pathLen - 1];
+                linkedDnode.entries[i].type = typeAdded;
+                break;
+            }
+        }
+        //We now need to write the updated dir to the disk with it's new link
+        //along with the linked dir and all it's info.
+        //buff1[0] = '\0';
+        DNode::dirNodeToBuffer(linkedDnode, buff1);
+        myPM->writeDiskBlock(parent.nextDirectPointer, buff1);
+        //buff1[0] = '\0';
+        DNode::dirNodeToBuffer(parent, buff1);
+        myPM->writeDiskBlock(parentNode, buff1);
+        return parentNode;
     }
 
     else if (parent.nextDirectPointer != 0 && parent.entries[9].subPointer != 0)
     {
-      //buff1[0] = '\0';
-      int linkedBlock = parent.nextDirectPointer;
-      myPM->readDiskBlock(parent.nextDirectPointer, buff1);
-      DNode linkedParent = DNode::loadDirNode(buff1);
-      //Put our information in the new linked directory
-      for (int i = 0; i < 10; i++)
-      {
-        if (linkedParent.entries[i].subPointer == 0)
+        //buff1[0] = '\0';
+        int linkedBlock = parent.nextDirectPointer;
+        myPM->readDiskBlock(parent.nextDirectPointer, buff1);
+        DNode linkedParent = DNode::loadDirNode(buff1);
+        //Put our information in the new linked directory
+        for (int i = 0; i < 10; i++)
         {
-          linkedParent.entries[i].subPointer = nodeAdded;
-          linkedParent.entries[i].name = path[pathLen - 1];
-          linkedParent.entries[i].type = typeAdded;
-          break;
+            if (linkedParent.entries[i].subPointer == 0)
+            {
+                linkedParent.entries[i].subPointer = nodeAdded;
+                linkedParent.entries[i].name = path[pathLen - 1];
+                linkedParent.entries[i].type = typeAdded;
+                break;
+            }
         }
-      }
 
-      //Write out our newly added information.
-      //buff1[0] = '\0';
-      char buff2[64];
-      DNode::dirNodeToBuffer(linkedParent, buff2);
-      myPM -> writeDiskBlock(linkedBlock, buff2); 
-      return parentNode;
+        //Write out our newly added information.
+        //buff1[0] = '\0';
+        char buff2[64];
+        DNode::dirNodeToBuffer(linkedParent, buff2);
+        myPM->writeDiskBlock(linkedBlock, buff2);
+        return parentNode;
     }
 
-
-
-      //Find a directory entry that hasn't been filled
-      for (int i = 0; i < 10; i++)
-      {
-          if (parent.entries[i].subPointer == 0)
-          {
-              parent.entries[i].subPointer = nodeAdded;
-              parent.entries[i].name = path[pathLen - 1];
-              parent.entries[i].type = typeAdded;
-              break;
-          }
-      }
-      //Rewrite modified directory to its original position
-      DNode::dirNodeToBuffer(parent, buff1);
-      myPM->writeDiskBlock(parentNode, buff1);
-      //Success, return pointer to directory modified
-      return parentNode;
-  }
+    //Find a directory entry that hasn't been filled
+    for (int i = 0; i < 10; i++)
+    {
+        if (parent.entries[i].subPointer == 0)
+        {
+            parent.entries[i].subPointer = nodeAdded;
+            parent.entries[i].name = path[pathLen - 1];
+            parent.entries[i].type = typeAdded;
+            break;
+        }
+    }
+    //Rewrite modified directory to its original position
+    DNode::dirNodeToBuffer(parent, buff1);
+    myPM->writeDiskBlock(parentNode, buff1);
+    //Success, return pointer to directory modified
+    return parentNode;
+}
 
 /*
 Checks if the file named filename is in the open queue or locked queue

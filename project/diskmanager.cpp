@@ -72,7 +72,6 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
             bufferIndexer++;
             int partSize = retrievePartitionInfo(buffer);
             diskP[partitionInProg].partitionSize = partSize;
-            //cout << "partsize is " << partSize << endl;
 
             //Record starting block
             int startBlock = retrievePartitionInfo(buffer);
@@ -82,7 +81,6 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
             //Record ending block
             int endBlock = retrievePartitionInfo(buffer);
             diskP[partitionInProg].endBlock = endBlock;
-            //cout << "End block is " << endBlock << endl;
 
             partitionInProg++;
         }
@@ -110,9 +108,6 @@ int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
         if ((diskP[i].partitionName == partitionname) && (blknum <= diskP[i].endBlock - diskP[i].startBlock))
         {
             int absoluteDiskBlock = diskP[i].startBlock + blknum;
-            //cout << "In DM READ at relative block " << blknum << endl;
-            //cout << "In DM READ at start block " << diskP[i].startBlock << endl;
-            //cout << "In DM READ at block " << absoluteDiskBlock << endl;
             return myDisk->readDiskBlock(absoluteDiskBlock, blkdata);
         }
     }

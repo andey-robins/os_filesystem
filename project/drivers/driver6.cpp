@@ -181,44 +181,28 @@ int main()
     cout << eBufr1[i];
   }
   cout << endl;
-  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/l"), 10, 'D', dBuf0, 12);
-  cout << "rv from setAttributes /o/o/o/a/l is " << r << (r == 0 ? " correct" : " fail") << endl;
-  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/d"), 10, 'D', dBuf1, 12);
-  cout << "rv from setAttributes /o/o/o/a/d is " << r << (r == 0 ? " correct" : " fail") << endl;
-  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/a/l"), 10, 'D', dBufr0, 12);
-  cout << "rv from getAttributes /o/o/o/a/l is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->createFile(const_cast<char *>("/o/o/o/z/l"), 10); 
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/z/l"), 10, 'D', dBuf0, 12);
+  cout << "rv from setAttributes /o/o/o/z/l is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->createFile(const_cast<char *>("/o/o/o/z/d"), 10);
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/z/d"), 10, 'D', dBuf1, 12);
+  cout << "rv from setAttributes /o/o/o/z/d is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/z/l"), 10, 'D', dBufr0, 12);
+  cout << "rv from getAttributes /o/o/o/z/l is " << r << (r == 0 ? " correct" : " fail") << endl;
   cout << "Attribute is ";
   for (int i = 0; i < 12; i++)
   {
     cout << dBufr0[i];
   }
   cout << endl;
-  r = c3->myFS->getAttribute(const_cast<char *>("o/o/o/a/d"), 10, 'D', dBufr1, 12);
-  cout << "rv from getAttributes /o/o/o/a/d is " << r << (r == 0 ? " correct" : " fail") << endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/z/d"), 10, 'D', dBufr1, 12);
+  cout << "rv from getAttributes /o/o/o/z/d is " << r << (r == 0 ? " correct" : " fail") << endl;
   cout << "Attribute is ";
   for (int i = 0; i < 12; i++)
   {
     cout << dBufr1[i];
   }
   cout << endl;
-  
-  /*r = c2->myFS->setAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->setAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
-  r = c2->myFS->getAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->getAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
-
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/d"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("o/o/o/a/d"), ...);
-  cout << ...*/
 
     return 0;
 }

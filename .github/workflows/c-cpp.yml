@@ -19,21 +19,21 @@ jobs:
     - name: make
       run: make
       working-directory: ${{env.working-directory}}
-    - name: drTester1
-      run: ./drTester1
+    - name: driver1
+      run: ./driver1
       working-directory: ${{env.working-directory}}
-    - name: drTester2
-      run: ./drTester2
+    - name: driver2
+      run: ./driver2
       working-directory: ${{env.working-directory}}
-    - name: drTester3
-      run: ./drTester3
+    - name: driver3
+      run: ./driver3
       working-directory: ${{env.working-directory}}
-    - name: drTester4
-      run: ./drTester4
+    - name: driver4
+      run: ./driver4
       working-directory: ${{env.working-directory}}
-    - name: drTester5
-      run: ./drTester5
+    - name: driver5
+      run: ./driver5
       working-directory: ${{env.working-directory}}
-    - name: drTester6
-      run: ./drTester6
+    - name: driver6
+      run: ./driver6
       working-directory: ${{env.working-directory}}

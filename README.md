@@ -1,18 +1,16 @@
 # Final Project
 
-Group name: ThreadMastas  
+**Group name:** ThreadMastas  
 
-Group Members:  
-Andey Tuttle  
-Stefan Emmons  
-Will Malone  
+**Group Members:**
+ - Andey Tuttle  
+ - Stefan Emmons  
+ - Will Malone  
 
-What is working and not working?
-	This can be described by drivers, ie only driver1 works.
+**What is working and not working?**
+ - Drivers 1-6 are working.
+ - Compile with the makefile in the `/project` directory.
 
-What are you attributes?  
-Last Accessed Date  
-Emojis
-
-
-
+**What are your attributes?**
+ - Last Accessed Date  
+ - Emoticons

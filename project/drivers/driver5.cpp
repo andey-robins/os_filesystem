@@ -25,9 +25,7 @@ int main()
     dp[2].partitionSize = 105;
 
     DiskManager *dm = new DiskManager(d, 3, dp);
-    FileSystem *fs1 = new FileSystem(dm, 'A');  // this throws a warning because it's never used, but i'm leaving it in so that the disk creates the FS
     FileSystem *fs2 = new FileSystem(dm, 'B');
-    FileSystem *fs3 = new FileSystem(dm, 'C');  // this throws a warning because it's never used, but i'm leaving it in so that the disk creates the FS
     Client *c2 = new Client(fs2);
     int i, r, f1;
     char buf2[64], buf3[600], buf4[600];
